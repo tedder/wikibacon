@@ -1,4 +1,4 @@
-package ModuleTemplate;
+package TedderBot;
 
 ###############################################################################
 #
@@ -25,6 +25,8 @@ package ModuleTemplate;
 ###############################################################################
 
 use strict;
+use Data::Dumper; # TODO: probably temporary for debugging/implementation
+use MediaWiki::API;
 
 sub new {
   my ($package, %in) = @_;
@@ -43,6 +45,38 @@ sub new {
 
 # This method is overridden if any _init work needs to be done.
 sub _init {
+  my ($self, %opt) = @_;
+  $self->{config}{api_url} = $opt{mw_api_url} || 'http://en.wikipedia.org/w/api.php';
+
+  if ($opt{userfile}) {
+    $self->readUserfile($opt{userfile});
+  }
+
+  print Dumper($self->{config});
+
+  return 1;
+}
+
+# quick function to read in our username and password from a file, so we
+# don't store them in our repository. Leaving it generic so we can store
+# other configuration information there too.
+sub readUserfile {
+  my ($self, $file) = @_;
+
+  return undef unless (-e $file);
+
+  open(USERFILE, $file) || die "can't open $file for reading: $!";
+  while (my $line = <USERFILE>) {
+    chomp $line;
+
+    # read in entries.
+    if ($line =~ /^\s*(.*?):\s*(.*)$/) {
+      $self->{config}{$1} = $2;
+    }
+  }
+  close USERFILE;
+
+  # success!
   return 1;
 }
 
@@ -52,7 +86,59 @@ sub _init_globals {
   return 1;
 }
 
+# Return our MediaWiki::API object. Instantiate if we haven't already.
+sub getMWAPI {
+  my ($self) = @_;
 
+  if ($self->{mw}) {
+    return $self->{mw};
+  } # else
+
+
+  # Okay, we don't have one. Create it, log in.
+  my $mw = MediaWiki::API->new( { api_url => $self->{config}{api_url} } );
+
+  # Should we log in?
+  if ($self->{config}{mw_user} && $self->{config}{mw_pass}) {
+    my $result = $mw->login( { lgname => $self->{config}{mw_user},
+                               lgpassword => $self->{config}{mw_pass} } )
+      || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
+    print Dumper($result);
+  }
+
+
+  # Assign it into ourselves.
+  $self->{mw} = $mw;
+
+  return $self->{mw};
+}
+
+
+# Get a user's contribs via the API. Many hardcoded bits in here will
+# probably be parameters later, but it serves our needs.
+sub getContribs {
+  my ($self, %opt) = @_;
+
+  return { error => 'no user given' } unless $opt{user};
+
+  my $mw = $self->getMWAPI();
+
+  # TODO: check uclimit to make sure we haven't gone over the permissible,
+  # tune down as necessary.
+  my $uclist = $mw->list ( { action => 'query',
+                list => 'usercontribs',
+                ucuser => $opt{user},
+                uclimit =>'500',
+                ucprop => 'ids|title|timestamp',
+                ucdir => 'newer',  },
+              { max => 100,
+                # not using a hook, we want the raw list
+                #hook => \&print_articles
+              } ) || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
+
+  print Dumper($uclist);
+
+}
 
 
 
