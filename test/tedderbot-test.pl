@@ -35,5 +35,6 @@ my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo' );
 
 $tb->getMWAPI();
 
+$tb->getContribs( user => 'tedder' );
 
 print "all done.\n";
