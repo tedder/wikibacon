@@ -31,7 +31,7 @@ use TedderBot;
 
 print "hello world!\n";
 
-my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo' );
+my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => 1 );
 
 $tb->getMWAPI();
 

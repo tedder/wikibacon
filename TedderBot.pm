@@ -47,6 +47,7 @@ sub new {
 sub _init {
   my ($self, %opt) = @_;
   $self->{config}{api_url} = $opt{mw_api_url} || 'http://en.wikipedia.org/w/api.php';
+  $self->{DEBUG} = $opt{debug} || 0;
 
   if ($opt{userfile}) {
     $self->readUserfile($opt{userfile});
@@ -123,21 +124,31 @@ sub getContribs {
 
   my $mw = $self->getMWAPI();
 
-  # TODO: check uclimit to make sure we haven't gone over the permissible,
-  # tune down as necessary.
+  # future: check uclimit to make sure we haven't gone over the
+  #  permissible limit, tune down as necessary.
   my $uclist = $mw->list ( { action => 'query',
                 list => 'usercontribs',
                 ucuser => $opt{user},
                 uclimit =>'500',
                 ucprop => 'ids|title|timestamp',
                 ucdir => 'newer',  },
-              { max => 100,
+              { max => 10000,
                 # not using a hook, we want the raw list
                 #hook => \&print_articles
               } ) || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
 
-  print Dumper($uclist);
 
+  $self->_debug("number of contribs found: ", scalar @$uclist, "\n");
+
+  return $uclist;
+}
+
+# internal debug method to print debugging information only when enabled.
+sub _debug {
+  my ($self) = shift; # shift off so we can print the rest.
+  return undef unless $self->{DEBUG};
+
+  print @_;
 }
 
 
