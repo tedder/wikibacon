@@ -26,15 +26,19 @@
 
 
 use strict;
+use Data::Dumper;
 use lib '/home/tedt/git/wikibacon/';
-use TedderBot;
+use TedderBot::UserContribs;
 
 print "hello world!\n";
 
-my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => 1 );
+my $tb = TedderBot::UserContribs->new( userfile => '/home/tedt/.wiki-userinfo', debug => 1 );
 
 $tb->getMWAPI();
 
-$tb->getContribs( user => 'tedder' );
+my $contrib1 = $tb->getContribs( user => 'tedder' );
+my $contrib2 = $tb->getContribs( user => 'peteforsyth' );
+my $int = $tb->preScoreContribs($contrib1, $contrib2);
+#print Dumper($int);
 
 print "all done.\n";
