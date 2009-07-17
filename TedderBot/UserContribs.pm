@@ -43,7 +43,7 @@ sub getContribs {
 
   ## see if we have a local cache of the user's data.
   my $lcuser = lc $opt{user};
-  $lcuser =~ s/\s/_/g
+  $lcuser =~ s/\s/_/g;
   # filename will be blank unless we pass a taint check.
   my $filename;
 
