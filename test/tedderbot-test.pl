@@ -36,9 +36,9 @@ my $tb = TedderBot::UserContribs->new( userfile => '/home/tedt/.wiki-userinfo', 
 
 $tb->getMWAPI();
 
-my $contrib1 = $tb->getContribs( user => 'tedder' );
-my $contrib2 = $tb->getContribs( user => 'peteforsyth' );
+my $contrib1 = $tb->getContribs( user => 'Tedder' );
+my $contrib2 = $tb->getContribs( user => 'WereSpielChequers' );
 my $int = $tb->preScoreContribs($contrib1, $contrib2);
-#print Dumper($int);
+print join(", ", keys %$int), "\n";
 
 print "all done.\n";

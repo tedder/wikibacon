@@ -49,7 +49,7 @@ sub getContribs {
 
   # basic taint check
   $self->_debug("lcuser: $lcuser\n");
-  if ($lcuser =~ /^([a-z0-9\s]+)$/) {
+  if ($lcuser =~ /^([a-z0-9\s_\.]+)$/) {
     $filename = '/tmp/tedderbot-usercontribs-' . $lcuser;
   }
   else {
