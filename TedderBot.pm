@@ -115,34 +115,6 @@ sub getMWAPI {
 }
 
 
-# Get a user's contribs via the API. Many hardcoded bits in here will
-# probably be parameters later, but it serves our needs.
-sub getContribs {
-  my ($self, %opt) = @_;
-
-  return { error => 'no user given' } unless $opt{user};
-
-  my $mw = $self->getMWAPI();
-
-  # future: check uclimit to make sure we haven't gone over the
-  #  permissible limit, tune down as necessary.
-  my $uclist = $mw->list ( { action => 'query',
-                list => 'usercontribs',
-                ucuser => $opt{user},
-                uclimit =>'500',
-                ucprop => 'ids|title|timestamp',
-                ucdir => 'newer',  },
-              { max => 10000,
-                # not using a hook, we want the raw list
-                #hook => \&print_articles
-              } ) || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
-
-
-  $self->_debug("number of contribs found: ", scalar @$uclist, "\n");
-
-  return $uclist;
-}
-
 # internal debug method to print debugging information only when enabled.
 sub _debug {
   my ($self) = shift; # shift off so we can print the rest.
