@@ -154,7 +154,10 @@ sub _populateIntersection {
     #my $user = $article->{'user'};
 
     my $usern_tag = "user" . $usern . "_timestamps";
+    # push the timestamps in. This is an easy way to count edits by each user
     push @{$intersection->{$name}{$usern_tag}}, $time;
+    # push the edit ref in. This gives us full information.
+    push @{$intersection->{$name}{edits}}, $article;
   }
 
   return $intersection;
