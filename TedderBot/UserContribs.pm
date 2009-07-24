@@ -26,6 +26,7 @@ package TedderBot::UserContribs;
 
 use strict;
 use Data::Dumper; # TODO: probably temporary for debugging/implementation
+use Time::ParseDate;
 use MediaWiki::API;
 use Storable;
 use TedderBot;
@@ -158,9 +159,122 @@ sub _populateIntersection {
     push @{$intersection->{$name}{$usern_tag}}, $time;
     # push the edit ref in. This gives us full information.
     push @{$intersection->{$name}{edits}}, $article;
+    $usern_tag = "user" . $usern . "_edits";
+    push @{$intersection->{$name}{$usern_tag}}, $article;
   }
 
   return $intersection;
 }
+
+# scoreContribs: given an intersection list, sort through them to assign
+# a "Bacon score".
+sub scoreContribs {
+  my ($self, $intersection) = @_;
+
+  #print Dumper($int); exit;
+  # loop through each article, send them to our score drivers
+  while (my ($article, $ref) = each %$intersection) {
+    print "a/r: $article / $ref\n";
+    #print Dumper($ref); exit;
+    my ($minEditTime, $u1Edit, $u2Edit) = $self->closestEditTime($ref);
+    $ref->{minEdit} = {
+      'time' => $minEditTime,
+      u1 => $u1Edit,
+      u2 => $u2Edit };
+
+#print Dumper($ref); exit;
+    #$self->firstEdits($ref);
+  }
+
+}
+
+
+# Display the close edits summary. Take the (scored) intersection list
+# and display text.
+sub showCloseEdits {
+  my ($self, $list, $limit) = @_;
+
+  my $count = 0;
+  foreach my $article (sort { $list->{$a}{minEdit}{time} <=> $list->{$b}{minEdit}{time} } keys %$list) {
+    # Have we shown the maximum number of edits we want to show?
+    if (++$count > $limit) { last; }
+
+    print "time: ", $list->{$article}{minEdit}{'time'}, "\n";
+    #print Dumper($list->{$article}{minEdit}); exit;
+
+    # pull out vars so they are easier to print.
+    my $id1 = $list->{$article}{minEdit}{u1}{revid};
+    my $id2 = $list->{$article}{minEdit}{u2}{revid};
+    my $time1 = $list->{$article}{minEdit}{u1}{timestamp};
+    my $time2 = $list->{$article}{minEdit}{u2}{timestamp};
+    my $user1 = $list->{$article}{minEdit}{u1}{user};
+    my $user2 = $list->{$article}{minEdit}{u2}{user};
+    my $difftime = $list->{$article}{minEdit}{'time'};
+    my $article = $list->{$article}{minEdit}{u1}{title};
+    print qq(* Article: [[$article]] (time between edits: $difftime seconds)<br />Edit #1 by $user1 ([http://en.wikipedia.org/w/index.php?diff=prev&oldid=$id1 diff]) at $time1<br />Edit #2 by $user2 ([http://en.wikipedia.org/w/index.php?diff=prev&oldid=$id2 diff]) at $time2\n);
+
+
+  }
+}
+
+
+# closestEditTime: Given an article reference from an intersection list, find
+# the minimum time between edits from different users.
+sub closestEditTime {
+  my ($self, $article) = @_;
+
+  # store our minimum time and revision ID.
+  my $minTime;
+  my $minU1Edit; # edit hash
+  my $minU2Edit; # edit hash
+
+  #print Dumper($article); exit;
+  foreach my $edit (@{$article->{user1_edits}}) {
+    # convert timestamp to epoch, compare against user2 to find min time.
+    my $epoch = parsedate($edit->{timestamp});
+    my $min;
+    ($min, $minU2Edit) = $self->findClosestEditTime($epoch, $article->{user2_edits});
+
+    # new minimum? Store the minTime and revision
+    if ($min < $minTime || ! $minTime) {
+      $minTime = $min;
+      $minU1Edit = $edit;
+    }
+  }
+
+  print "mt/mr: $minTime / $minU1Edit / $minU2Edit\n";
+
+  return ($minTime, $minU1Edit, $minU2Edit);
+}
+
+# driver to compare a given epoch time against a list of edits.
+# Poorly named, it's a driver broken out from closestEditTime()
+sub findClosestEditTime {
+  my ($self, $timeCompare, $edits)  = @_;
+
+  # set up a minimum. Set it to 'infinity' (the epoch of timeCompare)
+  my $min = $timeCompare;
+  my $minEdit = {};
+  foreach my $edit (@$edits) {
+    my $epoch = parsedate($edit->{timestamp});
+
+    # easier to be lazy- compute it once and store it here. Need to use 'abs'
+    # to make sure $timeCompare isn't greater than $epoch
+    my $delta = abs($epoch - $timeCompare);
+    if ($delta < $min) {
+      $min = $delta;
+      $minEdit = $edit;
+    }
+  }
+
+  # return the time and the edit hash.
+  return ($min, $minEdit);
+}
+
+# firstEdits: find the first page that U1 and U2 edited. This is actually
+# trickier than it sounds. In reality, it's the first edit by the
+# *second user*, not the TODO TODO need to return all, not top 1
+#  
+#    $self->firstEdits($ref);
 
 1; # Like a good module should.
