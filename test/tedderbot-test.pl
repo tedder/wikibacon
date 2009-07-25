@@ -36,12 +36,14 @@ my $user1;
 my $user2;
 my $userfile = '/home/tedt/.wiki-userinfo';
 my $debug = 0;
+my $test = 0;
 my $help = 0;
 
 GetOptions ("user1=s"    => \$user1,
             "user2=s"    => \$user2,
             "userfile=s" => \$userfile,
             "debug"      => \$debug,
+            "test"       => \$test,
             "help"       => \$help);
 
 if ($help) {
@@ -65,28 +67,33 @@ my $tb = TedderBot::UserContribs->new( userfile => $userfile, debug => $debug );
 
 my $contrib1 = $tb->getContribs( user => $user1 );
 my $contrib2 = $tb->getContribs( user => $user2 );
-my $int = $tb->preScoreContribs($contrib1, $contrib2);
+$tb->preScoreContribs($contrib1, $contrib2);
 #print join(", ", keys %$int), "\n";
-$tb->scoreContribs($int);
+$tb->scoreContribs();
 
-my $newText = '';
-
-$newText .= '==Wikibacon: ' . join(', ', sort($user1, $user2)) . "==\n";
+my $newText = "\n\n==Wikibacon: " . join(', ', sort($user1, $user2)) . "==\n";
 my $summary = 'Wikibacon results between ' . join(', ', sort($user1, $user2));
 
-# working, turn off for now.
-$newText .= qq(\n===Close edits===\nThis is the "time distance" between the two users. In other words, this shows collaboration or edit wars between the users.\n);
-$newText .= $tb->showCloseEdits($int, 5);
+my $numArticles = $tb->getUniqueArticles();
+$newText .= qq(\nUser [[User:$user1|$user1]] and [[User:$user2|$user2]] have edited $numArticles unique articles together.\n);
 
+# don't bother showing results if they haven't edited articles together.
+if ($numArticles) {
+  $newText .= qq(\n===Close edits===\nThis is the "time distance" between the two users. In other words, this shows collaboration or edit wars between the users.\n);
+  $newText .= $tb->showCloseEdits(5);
 
-#$tb->firstEdits($int);
-$newText .= qq(\n===First edits===\nThis shows the first time a user edited in articles the other user has already edited in. This shows when the user's paths first crossed.\n);
-$newText .= $tb->showFirstEdits($int, 5);
+  $newText .= qq(\n===First edits===\nThis shows the first time a user edited in articles the other user has already edited in. This shows when the user's paths first crossed.\n);
+  $newText .= $tb->showFirstEdits(5);
+}
 
 # Sign the post.
-$newText .= "~~~~\n";
+$newText .= "~~~~\n\n";
 
-$tb->appendPage('User:TedderBot/Bacon Results', $newText, $summary);
+if ($test) {
+  print "output:\n$newText\n";
+} else {
+  $tb->appendPage('User:TedderBot/Bacon Results', $newText, $summary);
+}
 
 exit;
 

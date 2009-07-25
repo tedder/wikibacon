@@ -101,7 +101,8 @@ sub getContribs {
 sub preScoreContribs {
   my ($self, $list1, $list2) = @_;
 
-  my $intersection = {};
+  $self->{intersection} = {};
+  my $intersection = $self->{intersection};
   # populate the intersection with both user lists.
   $self->_populateIntersection($intersection, $list1, 1);
   $self->_debug("intersection size after first list: ", scalar keys %$intersection, "\n");
@@ -120,21 +121,9 @@ sub preScoreContribs {
     }
   }
   $self->_debug("intersection size after deletion: ", scalar keys %$intersection, "\n");
+  $self->{unique_articles} = scalar keys %$intersection;
 
-  #my %intersection;
-  # loop through list2, make a second hash with articles in list1 hash
-  #foreach my $article (@$list2) {
-    #my $articleName = $article->{'title'};
-
-    # does this article also appear on list1?
-    #if ($list1articles{$articleName}) {
-      #$intersection{$articleName} = 1;
-    #}
-  #}
-
-  #$self->_debug("articles in intersection: ", scalar keys %intersection, "\n");
-
-  return $intersection;
+  return 1;
 }
 
 # Create a complex hash with all articles from the list, as well as all edit
@@ -169,7 +158,9 @@ sub _populateIntersection {
 # scoreContribs: given an intersection list, sort through them to assign
 # a "Bacon score".
 sub scoreContribs {
-  my ($self, $intersection) = @_;
+  my ($self) = @_;
+
+  my $intersection = $self->{intersection};
 
   # loop through each article, send them to our score drivers
   while (my ($article, $ref) = each %$intersection) {
@@ -189,8 +180,9 @@ sub scoreContribs {
 # Display the close edits summary. Take the (scored) intersection list
 # and display text.
 sub showFirstEdits {
-  my ($self, $list, $limit) = @_;
+  my ($self, $limit) = @_;
 
+  my $list = $self->{intersection};
   my $ret = '';
 
   my $count = 0;
@@ -220,8 +212,9 @@ sub showFirstEdits {
 # Display the close edits summary. Take the (scored) intersection list
 # and display text.
 sub showCloseEdits {
-  my ($self, $list, $limit) = @_;
+  my ($self, $limit) = @_;
 
+  my $list = $self->{intersection};
   my $ret = '';
 
   my $count = 0;
@@ -266,16 +259,26 @@ sub closestEditTime {
     # convert timestamp to epoch, compare against user2 to find min time.
     my $epoch = parsedate($edit->{timestamp});
     my $min;
-    ($min, $minU2Edit) = $self->findClosestEditTime($epoch, $article->{user2_edits});
+    my $u2Edit;
+    ($min, $u2Edit) = $self->findClosestEditTime($epoch, $article->{user2_edits});
 
     # new minimum? Store the minTime and revision
     if ($min < $minTime || ! $minTime) {
       $minTime = $min;
       $minU1Edit = $edit;
+      $minU2Edit = $u2Edit;
     }
   }
 
   $self->_debug("mt/mr: $minTime / $minU1Edit / $minU2Edit\n");
+
+  # u1 and u2 may be reversed. If so, flip them.
+  if (parsedate($minU1Edit->{timestamp}) > parsedate($minU2Edit->{timestamp})) {
+    # swap.
+    my $tmp = $minU1Edit;
+    $minU1Edit = $minU2Edit;
+    $minU2Edit = $tmp;
+  }
 
   return ($minTime, $minU1Edit, $minU2Edit);
 }
@@ -353,6 +356,16 @@ sub findMinEditTime {
   }
 
   return $minEdit;
+}
+
+# Given an intersection, return the number of unique articles the two users
+# have edited on together.
+#
+# returns an integer.
+sub getUniqueArticles {
+  my ($self) = @_;
+
+  return $self->{unique_articles};
 }
 
 1; # Like a good module should.
