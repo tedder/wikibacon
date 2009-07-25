@@ -135,9 +135,11 @@ sub appendPage {
     $mw->edit( {
       action => 'edit',
       summary => $summary,
+      section => 'new',
       title => $articleName,
       basetimestamp => $timestamp, # to avoid edit conflicts
-      text => $ref->{'*'} . $text } )
+      bot  => 1,
+      text => $text } )
       || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
   }
 

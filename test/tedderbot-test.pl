@@ -71,8 +71,10 @@ $tb->preScoreContribs($contrib1, $contrib2);
 #print join(", ", keys %$int), "\n";
 $tb->scoreContribs();
 
-my $newText = "\n\n==Wikibacon: " . join(', ', sort($user1, $user2)) . "==\n";
-my $summary = 'Wikibacon results between ' . join(', ', sort($user1, $user2));
+my $newText = "";
+#my $newText = "\n\n==Wikibacon: " . join(', ', sort($user1, $user2)) . "==\n";
+#my $summary = 'Wikibacon results between ' . join(', ', sort($user1, $user2));
+my $summary = "Wikibacon: " . join(', ', sort($user1, $user2));
 
 my $numArticles = $tb->getUniqueArticles();
 $newText .= qq(\nUser [[User:$user1|$user1]] and [[User:$user2|$user2]] have edited $numArticles unique articles together.\n);
