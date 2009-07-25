@@ -30,19 +30,34 @@ use Data::Dumper;
 use lib '/home/tedt/git/wikibacon/';
 use TedderBot::UserContribs;
 
-print "hello world!\n";
+my $user1 = 'Tedder';
+my $user2 = 'Peteforsyth';
 
-my $tb = TedderBot::UserContribs->new( userfile => '/home/tedt/.wiki-userinfo', debug => 1 );
+my $tb = TedderBot::UserContribs->new( userfile => '/home/tedt/.wiki-userinfo', debug => 0 );
 
 $tb->getMWAPI();
 
-my $contrib1 = $tb->getContribs( user => 'Tedder' );
-my $contrib2 = $tb->getContribs( user => 'Baseball Bugs' );
+my $contrib1 = $tb->getContribs( user => $user1 );
+my $contrib2 = $tb->getContribs( user => $user2 );
 my $int = $tb->preScoreContribs($contrib1, $contrib2);
-print join(", ", keys %$int), "\n";
+#print join(", ", keys %$int), "\n";
 $tb->scoreContribs($int);
 
+my $newText = '';
 
-$tb->showCloseEdits($int);
+$newText .= '==Wikibacon: ' . join(', ', sort($user1, $user2)) . "==\n";
+my $summary = 'Wikibacon results between ' . join(', ', sort($user1, $user2));
 
-print "all done.\n";
+# working, turn off for now.
+$newText .= qq(\n===Close edits===\nThis is the "time distance" between the two users. In other words, this shows collaboration or edit wars between the users.\n);
+$newText .= $tb->showCloseEdits($int, 5);
+
+
+#$tb->firstEdits($int);
+$newText .= qq(\n===First edits===\nThis shows the first time a user edited in articles the other user has already edited in. This shows when the user's paths first crossed.\n);
+$newText .= $tb->showFirstEdits($int, 5);
+
+# Sign the post.
+$newText .= "~~~~\n";
+
+$tb->appendPage('User:TedderBot/Bacon Results', $newText, $summary);

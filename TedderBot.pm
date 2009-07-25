@@ -53,7 +53,7 @@ sub _init {
     $self->readUserfile($opt{userfile});
   }
 
-  print Dumper($self->{config});
+  $self->_debug("_init details: ", Dumper($self->{config}));
 
   return 1;
 }
@@ -104,7 +104,7 @@ sub getMWAPI {
     my $result = $mw->login( { lgname => $self->{config}{mw_user},
                                lgpassword => $self->{config}{mw_pass} } )
       || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
-    print Dumper($result);
+    $self->_debug("login details: ", Dumper($result));
   }
 
 
@@ -123,6 +123,26 @@ sub _debug {
   print @_;
 }
 
+# appendPage: edit a page on Wikipedia and append content.
+# Wrapper for mw->edit with some extra goodies.
+sub appendPage {
+  my ($self, $articleName, $text, $summary) = @_;
+
+  my $mw = $self->getMWAPI();
+  my $ref = $mw->get_page( { title => $articleName } );
+  unless ( $ref->{missing} ) {
+    my $timestamp = $ref->{timestamp};
+    $mw->edit( {
+      action => 'edit',
+      summary => $summary,
+      title => $articleName,
+      basetimestamp => $timestamp, # to avoid edit conflicts
+      text => $ref->{'*'} . $text } )
+      || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
+  }
+
+  return 1;
+}
 
 
 1; # Like a good module should.
