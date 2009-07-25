@@ -77,14 +77,14 @@ my $newText = "";
 my $summary = "Wikibacon: " . join(', ', sort($user1, $user2));
 
 my $numArticles = $tb->getUniqueArticles();
-$newText .= qq(\nUser [[User:$user1|$user1]] and [[User:$user2|$user2]] have edited $numArticles unique articles together.\n);
+$newText .= qq(\n$numArticles unique articles have been edited by both [[User:$user1|$user1]] and [[User:$user2|$user2]]\n);
 
 # don't bother showing results if they haven't edited articles together.
 if ($numArticles) {
-  $newText .= qq(\n===Close edits===\nThis is the "time distance" between the two users. In other words, this shows collaboration or edit wars between the users.\n);
+  $newText .= qq(\n===Close edits===\nAmong pages that both users have edited, this list shows the pages where their edits were closest in time. This usually reveals periods of [[Wikipedia:Consensus|close collaboration]] or [[Wikipedia:Edit war|edit wars]] between two editors.\n);
   $newText .= $tb->showCloseEdits(5);
 
-  $newText .= qq(\n===First edits===\nThis shows the first time a user edited in articles the other user has already edited in. This shows when the user's paths first crossed.\n);
+  $newText .= qq(\n===First edits===\nAmong pages that both users have edited, this list shows where both made edits the earliest, without regard to how soon one edit was after the other. This may be useful in determining when the two editors first "met" one another.\n);
   $newText .= $tb->showFirstEdits(5);
 }
 

@@ -201,7 +201,7 @@ sub showFirstEdits {
     my $user2 = $list->{$article}{secondEdit}{edit2}{user};
     my $difftime = $list->{$article}{secondEdit}{'time'};
     my $article = $list->{$article}{secondEdit}{edit1}{title};
-    $ret .= qq(# Article: [[$article]]<br />First edited by $user1 at $time1 ([http://en.wikipedia.org/w/index.php?diff=prev&oldid=$id1 diff])<br />Secondly edited by $user2 at $time2 ([http://en.wikipedia.org/w/index.php?diff=prev&oldid=$id2 diff])\n);
+    $ret .= qq(# Article: [[$article]]<br />First [http://en.wikipedia.org/w/index.php?diff=prev&oldid=$id1 edited by ${user1}] at $time1<br />Secondly [http://en.wikipedia.org/w/index.php?diff=prev&oldid=$id2 edited by ${user2}] at $time2\n);
 
 
   }
@@ -233,7 +233,7 @@ sub showCloseEdits {
     my $user2 = $list->{$article}{minEdit}{u2}{user};
     my $difftime = $list->{$article}{minEdit}{'time'};
     my $article = $list->{$article}{minEdit}{u1}{title};
-    $ret .= qq(# Article: [[$article]] (time between edits: $difftime seconds)<br />Edit #1 by $user1 ([http://en.wikipedia.org/w/index.php?diff=prev&oldid=$id1 diff]) at $time1<br />Edit #2 by $user2 ([http://en.wikipedia.org/w/index.php?diff=prev&oldid=$id2 diff]) at $time2\n);
+    $ret .= qq(# Article: [[$article]] ('''time between edits''': $difftime seconds)<br />[http://en.wikipedia.org/w/index.php?diff=prev&oldid=$id1 Edit by ${user1}] at $time1<br />[http://en.wikipedia.org/w/index.php?diff=prev&oldid=$id2 Edit by ${user2}] at $time2\n);
 
 
   }
