@@ -27,15 +27,41 @@
 
 use strict;
 use Data::Dumper;
+use Getopt::Long;
 use lib '/home/tedt/git/wikibacon/';
 use TedderBot::UserContribs;
 
-my $user1 = 'Tedder';
-my $user2 = 'Peteforsyth';
+# commandline options with defaults.
+my $user1;
+my $user2;
+my $userfile = '/home/tedt/.wiki-userinfo';
+my $debug = 0;
+my $help = 0;
 
-my $tb = TedderBot::UserContribs->new( userfile => '/home/tedt/.wiki-userinfo', debug => 0 );
+GetOptions ("user1=s"    => \$user1,
+            "user2=s"    => \$user2,
+            "userfile=s" => \$userfile,
+            "debug"      => \$debug,
+            "help"       => \$help);
 
-$tb->getMWAPI();
+if ($help) {
+  showUsage();
+  exit;
+}
+
+unless (-e $userfile) {
+  print "Userfile is required for login info.\n";
+  showUsage();
+  exit;
+}
+
+unless ($user1 && $user2) {
+  print "must specify both user1 and user2.\n";
+  showUsage();
+  exit;
+}
+
+my $tb = TedderBot::UserContribs->new( userfile => $userfile, debug => $debug );
 
 my $contrib1 = $tb->getContribs( user => $user1 );
 my $contrib2 = $tb->getContribs( user => $user2 );
@@ -61,3 +87,10 @@ $newText .= $tb->showFirstEdits($int, 5);
 $newText .= "~~~~\n";
 
 $tb->appendPage('User:TedderBot/Bacon Results', $newText, $summary);
+
+exit;
+
+sub showUsage {
+  # TODO
+  print qq(PLACEHOLDER TODO TODO\n);
+}
