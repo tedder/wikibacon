@@ -57,6 +57,8 @@ sub getContribs {
     $self->_debug("user taint check failed: $lcuser\n");
   }
 
+  # TODO: update Storable with more recent contribs
+
   # Do we have a filename? Does Storable return something? Great!
   # That saves us some calls.
   if ($filename && -e $filename) {
@@ -180,17 +182,24 @@ sub scoreContribs {
 # Display the close edits summary. Take the (scored) intersection list
 # and display text.
 sub showFirstEdits {
-  my ($self, $limit) = @_;
+  my ($self, $limit, $namespace) = @_;
+
+  unless (defined $namespace) { $namespace = "all"; }
 
   my $list = $self->{intersection};
   my $ret = '';
 
   my $count = 0;
   foreach my $article (sort { $list->{$a}{secondEdit}{time} <=> $list->{$b}{secondEdit}{time} } keys %$list) {
+    $self->_debug("namespace wanted: $namespace .. this namespace: " . $list->{$article}{secondEdit}{edit1}{ns} . "\n");
+    #print Dumper($list->{$article}{secondEdit}); exit;
+    next unless ($namespace eq "all" || $namespace == $list->{$article}{secondEdit}{edit1}{ns});
     # Have we shown the maximum number of edits we want to show?
     if (++$count > $limit) { last; }
 
     $self->_debug("time: ", $list->{$article}{minEdit}{'time'}, "\n");
+
+#print Dumper($list->{$article}{secondEdit}); exit;
 
     # pull out vars so they are easier to print.
     my $id1 = $list->{$article}{secondEdit}{edit1}{revid};
