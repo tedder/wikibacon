@@ -1,0 +1,46 @@
+copied from wiki
+
+* get user contribs
+      input: username
+      output: user contribs list (big hashref/array)
+* score contribs
+      input: user1, user2, callbacks to prescore and score functions (will call "get user contribs")
+      output: scored intersection: highest score, earliest score
+  * generic intersection functions
+        input: page1 hashref, page2 hashref (from usercontribs)
+        output: integer score (simple true/false for prescore, actual score otherwise)
+    * prescore: quickly find common pages (simple intersection)
+    * score: delta time
+* output
+  * sifters: (probably called via the output functions)
+      input: user1, user2, scored intersection, n results
+      output: n results in scored intersection format
+    - per date
+    - per high score
+    - per namespace
+    - user1/user2 talk pages
+  * output types
+     input: user1, user2, requested sifts (or "all")
+    - text/cmdline
+    - html
+    - wikipedia: post to userspace
+
+
+future
+
+ bot ethics:
+   * cache usercontribs locally (users are likely to request user1 vs user2, user1 vs user3, etc)
+   * look for "big red button" (aka panic button) status, don't run if we are commanded not to
+   * use maxlag parameter
+ getcontribs:
+   * implement compression
+   * autoscale request size (check errors, make sure we aren't requesting more than allowed)
+ prescore: look/join cross-namespace relations (ex: "article foo" and "talk:foo")
+ score: higher score for:
+   * bigger edits
+   * reverts/edits/undos
+   * ongoing/repeat edits (edit wars)
+   * BRD cycles (bold, revert, discuss)
+   * user talk page posts (even if the other user doesn't reply)
+ 
+

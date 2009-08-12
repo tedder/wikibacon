@@ -1,0 +1,25 @@
+moved from wiki
+
+1. Pick a project (done)
+2. Name the project (done)
+3. Create a repository (done)
+4. Write a README file (done)
+5. Coding: get (done)
+ * http (would use LWP::Simple, but need gzip encoding/decoding)
+ * WP UCAPI
+ * MediaWiki::List
+ * MediaWiki::List::UserContribs
+6. Coding: Parse (done)
+ * xml, dates
+7. Coding: Compare (done)
+ * MediaWiki::List::UserContribs::Shared
+ * MediaWiki::UserContribs (compare, score, create new list)
+ * intersection function
+ * scoring function
+8. Coding: Display (in progress- Wikipedia results up)
+ * MediaWiki::List::UserContribs::Shared::Output
+ * cmdline (debugging)
+ * web
+ * wikipedia: reply to user talk page
+9. Publish (let a few wikipedia users know) (in progress)
+10. Profit!
