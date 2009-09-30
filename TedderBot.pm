@@ -120,7 +120,7 @@ sub _debug {
   my ($self) = shift; # shift off so we can print the rest.
   return undef unless $self->{DEBUG};
 
-  print @_;
+  print STDERR @_;
 }
 
 # appendPage: edit a page on Wikipedia and append content.
@@ -136,6 +136,28 @@ sub appendPage {
       action => 'edit',
       summary => $summary,
       section => 'new',
+      title => $articleName,
+      basetimestamp => $timestamp, # to avoid edit conflicts
+      bot  => 1,
+      text => $text } )
+      || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
+  }
+
+  return 1;
+}
+
+# replace: edit a page on Wikipedia and replace content.
+# Wrapper for mw->edit with some extra goodies.
+sub replacePage {
+  my ($self, $articleName, $text, $summary) = @_;
+
+  my $mw = $self->getMWAPI();
+  my $ref = $mw->get_page( { title => $articleName } );
+  unless ( $ref->{missing} ) {
+    my $timestamp = $ref->{timestamp};
+    $mw->edit( {
+      action => 'edit',
+      summary => $summary,
       title => $articleName,
       basetimestamp => $timestamp, # to avoid edit conflicts
       bot  => 1,
