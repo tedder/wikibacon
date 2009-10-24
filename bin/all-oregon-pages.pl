@@ -31,14 +31,14 @@ use Encode;
 use lib '/home/tedt/git/wikibacon/';
 use TedderBot;
 
-print STDERR "hello world!\n";
+my $nopost = 1;
 
-my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => 1 );
+my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => 0 );
 my $mw = $tb->getMWAPI();
 
 # get some page contents
 #my $page = $mw->get_page( { title => 'Wikipedia:WikiProject Oregon/Admin' } );
-print STDERR "time to make request.\n";
+
 my $backlist = $mw->list ( { action => 'query',
   list => 'backlinks',
   bltitle => 'Template:WikiProject Oregon',
@@ -59,10 +59,11 @@ foreach my $entry (@$backlist) {
   next unless ($entry->{ns} == 1);
   ++$count;
   next if ($entry->{title} =~ /^Talk:/);
-  print STDERR Dumper($entry); exit;
+
+  print STDERR "non-Talk entry:\n" . Dumper($entry);
+  exit;
 }
 
-print STDERR "pagecount: $count\n";
 
 #print Dumper($backlist);
 my $wikiContent = '';
@@ -82,10 +83,11 @@ my $catlist = $mw->list ( { action => 'query',
 } ) || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
 
 $count = 0;
+
 binmode STDOUT, ":utf8";
+my %articles;
 foreach my $entry (@$catlist) {
   next unless ($entry->{ns} == 1);
-  ++$count;
 
   my $title = $entry->{title};
   if (! $title =~ /^Talk:/) {
@@ -94,10 +96,42 @@ foreach my $entry (@$catlist) {
   }
 
   $title =~ s#^Talk:\s*##;
-  $wikiContent .= '* [[' . decode_utf8($title) . "]]\n";
+  my $dtitle = decode_utf8($title);
+  #my $dtitle = $title;
+  my $str = '* [[' . $title . "]]\n";
+  if (exists $articles{$title}) {
+    print STDERR "Duplicated article: $title\n";
+  }
+  $articles{$title} = $str;
+
+  ++$count;
   ###print Dumper($entry); exit;
 }
 
-$tb->replacePage('User:TedderBot/AOP/admin', $wikiContent, 'update /admin page with all listings (bot edit)');
+# seperate, so we can avoid escaping issues.
+my $time_subst = '{{CURRENTTIME}} {{CURRENTDAYNAME}} {{CURRENTMONTHNAME}} {{CURRENTDAY}}, {{CURRENTYEAR}}';
 
-print STDERR "pagecount: $count\n";
+# header
+$wikiContent = qq({{WP:WPOR-Nav}}
+This list was constructed from articles tagged with {{tl|WikiProject Oregon}} (or any other article in [[:category:WikiProject Oregon articles]]) as of $time_subst. This list makes possible [http://en.wikipedia.org/w/index.php?title=Special:Recentchangeslinked&target=Wikipedia:WikiProject_Oregon/Admin Recent WP:ORE article changes].
+
+There are $count entries, all articles.
+
+<small>''See also: [[Wikipedia:WikiProject Oregon/Admin2]] for non-article entries''</small>
+
+);
+
+# content
+foreach my $key (sort keys %articles) {
+  $wikiContent .= $articles{$key};
+}
+#$wikiContent .= join sort keys %articles;
+
+# footer
+$wikiContent .= "\n\n[[Category:WikiProject Oregon]]\n";
+
+#print "page: $wikiContent\n";
+unless ($nopost) {
+  $tb->replacePage('User:TedderBot/AOP/admin', $wikiContent, 'update /admin page with all listings (bot edit)');
+}
+

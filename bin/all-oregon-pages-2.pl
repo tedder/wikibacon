@@ -31,7 +31,9 @@ use Encode;
 use lib '/home/tedt/git/wikibacon/';
 use TedderBot;
 
-my $nopost = 1;
+use constant WIKI_TIME => '{{CURRENTTIME}} {{CURRENTDAYNAME}} {{CURRENTMONTHNAME}} {{CURRENTDAY}}, {{CURRENTYEAR}}';
+
+my $NOPOST = 1;
 
 my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => 0 );
 my $mw = $tb->getMWAPI();
@@ -55,21 +57,15 @@ my $backlist = $mw->list ( { action => 'query',
 } ) || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
 
 my $count = 0;
-my @namespacelist;
+my %namespacelist;
 foreach my $entry (@$backlist) {
   my $namespace = $entry->{ns};
-  $namespacelist[$namespace] = $entry;
-  #next unless ($entry->{ns} == 1);
-  ++$count;
-  next if ($entry->{title} =~ /^Talk:/);
-
-  print STDERR "non-Talk entry:\n" . Dumper($entry);
-  exit;
+  my $title = $entry->{title};
+  my $dtitle = decode_utf8($title);
+  push @{$namespacelist{$namespace}}, $title;
 }
 
-
 #print Dumper($backlist);
-my $wikiContent = '';
 
 my $catlist = $mw->list ( { action => 'query',
   list => 'categorymembers',
@@ -87,35 +83,49 @@ my $catlist = $mw->list ( { action => 'query',
 
 $count = 0;
 
-binmode STDOUT, ":utf8";
+#binmode STDOUT, ":utf8";
 my %articles;
 foreach my $entry (@$catlist) {
-  next unless ($entry->{ns} == 1);
-
+  my $namespace = $entry->{ns};
   my $title = $entry->{title};
-  if (! $title =~ /^Talk:/) {
-    print STDERR "not talk: $title\n";
-    next;
-  }
-
-  $title =~ s#^Talk:\s*##;
   my $dtitle = decode_utf8($title);
-  #my $dtitle = $title;
-  my $str = '* [[' . $title . "]]\n";
-  if (exists $articles{$title}) {
-    print STDERR "Duplicated article: $title\n";
-  }
-  $articles{$title} = $str;
-
-  ++$count;
-  ###print Dumper($entry); exit;
+  push @{$namespacelist{$namespace}}, $title;
 }
 
-# seperate, so we can avoid escaping issues.
-my $time_subst = '{{CURRENTTIME}} {{CURRENTDAYNAME}} {{CURRENTMONTHNAME}} {{CURRENTDAY}}, {{CURRENTYEAR}}';
+outputAdmin($tb, $mw, \%namespacelist);
+outputAdmin2($tb, $mw, \%namespacelist);
 
-# header
-$wikiContent = qq({{WP:WPOR-Nav}}
+exit;
+
+# outputs the 'article' and 'talk' namespaces only, but must remove "Talk:"
+# from the talk page titles.
+sub outputAdmin {
+
+  my %alist;
+  while (my $title = shift @{$namespacelist{0}}) {
+    if (exists $alist{$title}) {
+      #print STDERR "Duplicated /admin page: $title\n";
+    } else {
+      ++$alist{$title};
+    }
+  }
+
+  while (my $title = shift @{$namespacelist{1}}) {
+    $title =~ s/^Talk:(.*)/$1/;
+    if (exists $alist{$title}) {
+      #print STDERR "Duplicated /admin page: $title\n";
+    } else {
+      ++$alist{$title};
+    }
+  }
+
+  my $count = scalar keys(%alist);
+
+  # hack for the lazy- so we don't have to concatenate the constant.
+  my $time_subst = WIKI_TIME;
+
+  # create our header
+  my $wikiContent = qq({{WP:WPOR-Nav}}
 This list was constructed from articles tagged with {{tl|WikiProject Oregon}} (or any other article in [[:category:WikiProject Oregon articles]]) as of $time_subst. This list makes possible [http://en.wikipedia.org/w/index.php?title=Special:Recentchangeslinked&target=Wikipedia:WikiProject_Oregon/Admin Recent WP:ORE article changes].
 
 There are $count entries, all articles.
@@ -124,17 +134,180 @@ There are $count entries, all articles.
 
 );
 
-# content
-foreach my $key (sort keys %articles) {
-  $wikiContent .= $articles{$key};
+  # content
+  foreach my $title (sort keys %alist) {
+    $wikiContent .= '[[' . $alist{$title} . "]]\n";
+  }
+
+  # footer
+  $wikiContent .= "\n\n[[Category:WikiProject Oregon]]\n";
+
+  #print "page: $wikiContent\n";
+  unless ($NOPOST) {
+    $tb->replacePage('User:TedderBot/AOP/admin', $wikiContent, 'update /admin page with all listings (bot edit)');
+  }
+
 }
-#$wikiContent .= join sort keys %articles;
 
-# footer
-$wikiContent .= "\n\n[[Category:WikiProject Oregon]]\n";
+sub makeCategoryList {
+  my ($ns) = @_;
 
-#print "page: $wikiContent\n";
-unless ($nopost) {
-  $tb->replacePage('User:TedderBot/AOP/admin', $wikiContent, 'update /admin page with all listings (bot edit)');
+  my %u;
+  foreach my $title (@{$ns->{14}}) {
+    $title = ':' . $title;
+    $u{$title}++;
+  }
+
+  foreach my $title (@{$ns->{15}}) {
+    $title =~ s#^(Category) talk#$1#;
+    $title = ':' . $title;
+    $u{$title}++;
+  }
+
+  my @final = keys %u;
+
+  return \@final;
 }
 
+sub makeFileList {
+  my ($ns) = @_;
+
+  my %u;
+  foreach my $title (@{$ns->{6}}) {
+    $title = ':' . $title;
+    $u{$title}++;
+  }
+
+  foreach my $title (@{$ns->{7}}) {
+    $title =~ s#^(File) talk#$1#;
+    $title = ':' . $title;
+    $u{$title}++;
+  }
+
+  my @final = keys %u;
+
+  return \@final;
+}
+
+sub makePortalList {
+  my ($ns) = @_;
+
+  my %u;
+  foreach my $title (@{$ns->{100}}) {
+    $u{$title}++;
+  }
+
+  foreach my $title (@{$ns->{101}}) {
+    $title =~ s#^(Portal) talk#$1#;
+    $u{$title}++;
+  }
+
+  my @final = keys %u;
+
+  return \@final;
+}
+
+sub makeTemplateList {
+  my ($ns) = @_;
+
+  my %u;
+  foreach my $title (@{$ns->{10}}) {
+    $u{$title}++;
+  }
+
+  foreach my $title (@{$ns->{11}}) {
+    $title =~ s#^(Template) talk#$1#;
+    $u{$title}++;
+  }
+
+  my @final = keys %u;
+
+  return \@final;
+}
+
+sub makeProjectList {
+  my ($ns) = @_;
+
+  my %u;
+  foreach my $title (@{$ns->{4}}) {
+    #$title = ':' . $title;
+    $u{$title}++;
+  }
+
+  foreach my $title (@{$ns->{5}}) {
+    #$title = ':' . $title;
+    $title =~ s#^(Project|Wikipedia) talk##;
+    $u{$title}++;
+  }
+
+  my @final = keys %u;
+
+  return \@final;
+}
+
+# outputs the remaining namespaces.
+sub outputAdmin2 {
+  my ($tb, $mw, $nsl) = @_;
+
+
+  # It's pretty much easier to unroll this loop than it is to build a
+  # dispatch table in perl. So we'll make these six calls by hand and
+  # duplicate the makeNList functions; at least it allows us to create
+  # custom regexes and filters.
+
+  my $catlist = makeCategoryList($nsl);
+  my $cat = outputCategory('category', $catlist);
+  my $mainContent = join('', @$cat);
+
+  #my $filelist = makeFileList($nsl);
+  my $file = outputCategory('file', makeFileList($nsl));
+  $mainContent .= join('', @$file);
+
+  my $port = outputCategory('portal', makePortalList($nsl));
+  $mainContent .= join('', @$port);
+
+  my $temp = outputCategory('template', makePortalList($nsl));
+  $mainContent .= join('', @$temp);
+
+  my $proj = outputCategory('project', makeProjectList($nsl));
+  $mainContent .= join('', @$proj);
+
+  my $time_subst = WIKI_TIME;
+  my $wikiContent = qq({{WP:WPOR-Nav}}
+This table was constructed from categories, images, portal, project, and templates tagged with {{tl|WikiProject Oregon}} (or any other article in [[:category:WikiProject Oregon articles]]) as of $time_subst. This list makes possible [http://en.wikipedia.org/w/index.php?title=Special:Recentchangeslinked&target=Wikipedia:WikiProject_Oregon/Admin2 Recent WP:ORE non-article changes].
+
+There are TODO images (now called "file"), TODO categories, TODO portal pages, TODO templates, and TODO project pages totaling TODO pages.
+
+<small>''See also: [[Wikipedia:WikiProject Oregon/Admin]] for article entries''</small>
+
+{| class="sortable"
+! Page !! Classification
+) . $mainContent . qq(|}
+
+[[Category:WikiProject Oregon]]
+);
+  $tb->replacePage('User:TedderBot/AOP/admin2', $wikiContent, 'update /admin2 page with all listings (bot edit)');
+}
+
+sub outputCategory {
+  my ($label, $list) = @_;
+  my @ret;
+
+  #unless (ref $lista eq 'ARRAY') {
+  #  print "Inner array isn't present for $label.\n";
+  #  return \@ret;
+  #}
+
+  #my $list = \@$lista;
+
+  unless (ref $list eq 'ARRAY') {
+    print "Hmm. No results for $label in outputCategory.\n";
+    return \@ret;
+  }
+
+  foreach my $title (sort @$list) {
+    push @ret, '|-' . "\n" . '|[[' . $title . ']]||' . $label . "\n";
+  }
+
+  return \@ret;
+}
