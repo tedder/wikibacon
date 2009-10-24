@@ -230,13 +230,13 @@ sub makeProjectList {
 
   my %u;
   foreach my $title (@{$ns->{4}}) {
-    #$title = ':' . $title;
+    $title =~ s#^:##;
     $u{$title}++;
   }
 
   foreach my $title (@{$ns->{5}}) {
-    #$title = ':' . $title;
     $title =~ s#^(Project|Wikipedia) talk##;
+    $title =~ s#^:##;
     $u{$title}++;
   }
 
