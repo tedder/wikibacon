@@ -178,5 +178,23 @@ sub replacePage {
   return 0;
 }
 
+#
+# checks User:TedderBot/Bot status to make sure we are allowed to run.
+sub okayToRun {
+  my ($self, $runpage) = @_;
+
+  $runpage ||= 'User:TedderBot/Bot status';
+  my $mw = $self->getMWAPI();
+  my $ret = $mw->get_page( { title => $runpage } );
+  #print Dumper($ret);
+
+  # check for success and runnable status.
+  if ($ret && ref $ret eq 'HASH' && $ret->{'*'} =~ m#^status: run\b#i) {
+    return 1;
+  }
+
+  # anything else is a failure.
+  return 0;
+}
 
 1; # Like a good module should.
