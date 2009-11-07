@@ -32,7 +32,8 @@ use Getopt::Long;
 use lib '/home/tedt/git/wikibacon/';
 use TedderBot;
 
-use constant WIKI_TIME => '{{CURRENTTIME}} {{CURRENTDAYNAME}} {{CURRENTMONTHNAME}} {{CURRENTDAY}}, {{CURRENTYEAR}}';
+use constant WIKI_TIME => '{{subst:CURRENTTIME}} {{subst:CURRENTDAYNAME}} {{subst:CURRENTMONTHNAME}} {{subst:CURRENTDAY}}, {{subst:CURRENTYEAR}}';
+use constant WIKI_LOGTIME => '{{subst:CURRENTYEAR}}-{{subst:CURRENTMONTH}}-{{subst:CURRENTDAY2}} {{subst:CURRENTTIME}}';
 
 
 # run through the process, but don't acutally output to Wikipedia.
@@ -42,7 +43,13 @@ my $NOPOST = 0;
 # messages to STDOUT/STDERR.
 my $DEBUG = 0;
 
-GetOptions ("nopost"    => \$nopost,
+# Log lines
+my $LOG = '';
+
+my $STARTTIME = time();
+
+
+GetOptions ("nopost"    => \$NOPOST,
             "debug"     => \$DEBUG);
 
 
@@ -109,8 +116,14 @@ foreach my $entry (@$catlist) {
   push @{$namespacelist{$namespace}}, $title;
 }
 
+#sleep 30;
+#sleep 30;
 outputAdmin($tb, $mw, \%namespacelist);
 outputAdmin2($tb, $mw, \%namespacelist);
+#sleep 30;
+my $runtime = time() - $STARTTIME;
+appendLog("finished, ready to upload log. Runtime in seconds: $runtime");
+uploadLog($tb);
 
 exit;
 
@@ -153,7 +166,8 @@ There are $count entries, all articles.
 
   # content
   foreach my $title (sort keys %alist) {
-    $wikiContent .= '[[' . $alist{$title} . "]]\n";
+#print "title: $title .. ", $alist{$title}, "\n"; exit;
+    $wikiContent .= '* [[' . $title . "]]\n";
   }
 
   # footer
@@ -166,10 +180,12 @@ There are $count entries, all articles.
       # TODO: uncomment actual location
       #$location = 'Wikipedia:WikiProject Oregon/Admin';
     }
-    $tb->replacePage($location, $wikiContent, "update page with $count articles (bot edit)");
+    my $ret = $tb->replacePage($location, $wikiContent, "update page with $count articles (bot edit)");
+    my $status = 'succeeded';
+    unless ($ret) { $status = 'FAILED'; }
+    appendLog("Updated [[$location]] with $count articles, $status.");
   }
 
-  appendLog("Updated [[$location]] with $count articles.");
 }
 
 sub makeCategoryList {
@@ -273,7 +289,7 @@ sub makeProjectList {
 # outputs the remaining namespaces.
 sub outputAdmin2 {
   my ($tb, $mw, $nsl) = @_;
-
+print "starting admin2\n";
 
   # It's pretty much easier to unroll this loop than it is to build a
   # dispatch table in perl. So we'll make these six calls by hand and
@@ -321,16 +337,21 @@ There are $count{file} images (now called "file"), $count{category} categories, 
 [[Category:WikiProject Oregon]]
 );
 
+print "about to post admin2\n";
   unless ($NOPOST) {
     my $location = 'User:TedderBot/AOP/admin2';
     unless ($DEBUG) {
       # TODO: uncomment actual location
       #$location = 'Wikipedia:WikiProject Oregon/Admin2';
     }
-    $tb->replacePage($location, $wikiContent, "update page with $count{total} total listings (bot edit)");
+print "at RP, loc: $location\n";
+    my $ret = $tb->replacePage($location, $wikiContent, "update page with $count{total} total listings (bot edit)");
+    my $status = 'succeeded';
+    unless ($ret) { $status = 'FAILED'; }
+print "RP done, loc: $location\n";
+    appendLog("Updated [[$location]] with the following: $count{file} images,$count{category} categories, $count{portal} portals, $count{template} templates, $count{project} project pages (total: $count{total} pages), $status.");
   }
 
-  appendLog("Updated [[$location]] with the following: $count{file} images,$count{category} categories, $count{portal} portals, $count{template} templates, $count{project} project pages (total: $count{total} pages).");
 }
 
 sub outputCategory {
@@ -354,4 +375,21 @@ sub outputCategory {
   }
 
   return \@ret;
+}
+
+# Add to the log cache so we can output it at the end.
+sub appendLog {
+  $LOG .= join('', ':', @_, "\n");
+}
+
+# Dump the log onto Wikipedia, clear the global.
+sub uploadLog {
+  my ($tb) = @_;
+
+  my $location = 'User:TedderBot/AOP/log';
+  unless ($NOPOST) {
+    my $output = "* " . WIKI_LOGTIME . "\n" . $LOG . "\n\n";
+    $tb->appendPage($location, $output, WIKI_LOGTIME, "update AOP log");
+    $LOG = '';
+  }
 }
