@@ -148,14 +148,16 @@ sub appendPage {
 
 # replace: edit a page on Wikipedia and replace content.
 # Wrapper for mw->edit with some extra goodies.
+# Returns 1 on success.
 sub replacePage {
   my ($self, $articleName, $text, $summary) = @_;
 
   my $mw = $self->getMWAPI();
   my $ref = $mw->get_page( { title => $articleName } );
+  #print STDERR "updating page: $articleName. ref: ", Dumper($ref), "\n";
   unless ( $ref->{missing} ) {
     my $timestamp = $ref->{timestamp};
-    $mw->edit( {
+    my $ret = $mw->edit( {
       action => 'edit',
       summary => $summary,
       title => $articleName,
@@ -163,9 +165,17 @@ sub replacePage {
       bot  => 1,
       text => $text } )
       || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
+
+    #print STDERR "mw edit ret: ", Dumper($ret), "\n";
+    # return true on success.
+    if ($ret && ref $ret eq 'HASH'
+      && ref $ret->{edit} eq 'HASH'
+      && $ret->{edit}{result} eq 'Success') {
+      return 1;
+    }
   }
 
-  return 1;
+  return 0;
 }
 
 
