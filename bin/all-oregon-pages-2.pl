@@ -289,7 +289,6 @@ sub makeProjectList {
 # outputs the remaining namespaces.
 sub outputAdmin2 {
   my ($tb, $mw, $nsl) = @_;
-print "starting admin2\n";
 
   # It's pretty much easier to unroll this loop than it is to build a
   # dispatch table in perl. So we'll make these six calls by hand and
@@ -337,18 +336,18 @@ There are $count{file} images (now called "file"), $count{category} categories, 
 [[Category:WikiProject Oregon]]
 );
 
-print "about to post admin2\n";
+  #print "about to post admin2\n";
   unless ($NOPOST) {
     my $location = 'User:TedderBot/AOP/admin2';
     unless ($DEBUG) {
       # TODO: uncomment actual location
       #$location = 'Wikipedia:WikiProject Oregon/Admin2';
     }
-print "at RP, loc: $location\n";
+    #print "at RP, loc: $location\n";
     my $ret = $tb->replacePage($location, $wikiContent, "update page with $count{total} total listings (bot edit)");
     my $status = 'succeeded';
     unless ($ret) { $status = 'FAILED'; }
-print "RP done, loc: $location\n";
+    #print "RP done, loc: $location\n";
     appendLog("Updated [[$location]] with the following: $count{file} images,$count{category} categories, $count{portal} portals, $count{template} templates, $count{project} project pages (total: $count{total} pages), $status.");
   }
 
