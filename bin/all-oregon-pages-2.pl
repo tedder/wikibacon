@@ -28,12 +28,23 @@
 use strict;
 use Data::Dumper;
 use Encode;
+use Getopt::Long;
 use lib '/home/tedt/git/wikibacon/';
 use TedderBot;
 
 use constant WIKI_TIME => '{{CURRENTTIME}} {{CURRENTDAYNAME}} {{CURRENTMONTHNAME}} {{CURRENTDAY}}, {{CURRENTYEAR}}';
 
-my $NOPOST = 1;
+
+# run through the process, but don't acutally output to Wikipedia.
+my $NOPOST = 0; 
+
+# Output to the debug location, not the ACTUAL location. Might also cause
+# messages to STDOUT/STDERR.
+my $DEBUG = 0;
+
+GetOptions ("nopost"    => \$nopost,
+            "debug"     => \$DEBUG);
+
 
 my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => 0 );
 my $mw = $tb->getMWAPI();
@@ -44,7 +55,6 @@ my $mw = $tb->getMWAPI();
 my $backlist = $mw->list ( { action => 'query',
   list => 'backlinks',
   bltitle => 'Template:WikiProject Oregon',
-  #bltitle => 'Felicia Day',
   #blnamespace => '0|1', # 1 is talk, which is where the template is. We'll
   #                      # just use s/Talk:// to get the title.
   bllimit => '500',
@@ -62,6 +72,14 @@ foreach my $entry (@$backlist) {
   my $namespace = $entry->{ns};
   my $title = $entry->{title};
   my $dtitle = decode_utf8($title);
+
+
+  # Skip the Wikipedia: projects that link to here. We only want the ones
+  # that are in the category, not all the {{tlx|WPOR}} type links.
+  if ($namespace == 4 || $namespace == 5) {
+    #print "backlinks: $title .. namespace: $namespace\n";
+    next;
+  }
   push @{$namespacelist{$namespace}}, $title;
 }
 
@@ -70,7 +88,6 @@ foreach my $entry (@$backlist) {
 my $catlist = $mw->list ( { action => 'query',
   list => 'categorymembers',
   cmtitle => 'Category:WikiProject Oregon pages',
-  #bltitle => 'Felicia Day',
   #blnamespace => '0|1', # 1 is talk, which is where the template is. We'll
   #                      # just use s/Talk:// to get the title.
   cmlimit => '500',
@@ -144,9 +161,15 @@ There are $count entries, all articles.
 
   #print "page: $wikiContent\n";
   unless ($NOPOST) {
-    $tb->replacePage('User:TedderBot/AOP/admin', $wikiContent, 'update /admin page with all listings (bot edit)');
+    my $location = 'User:TedderBot/AOP/admin';
+    unless ($DEBUG) {
+      # TODO: uncomment actual location
+      #$location = 'Wikipedia:WikiProject Oregon/Admin';
+    }
+    $tb->replacePage($location, $wikiContent, "update page with $count articles (bot edit)");
   }
 
+  appendLog("Updated [[$location]] with $count articles.");
 }
 
 sub makeCategoryList {
@@ -230,12 +253,14 @@ sub makeProjectList {
 
   my %u;
   foreach my $title (@{$ns->{4}}) {
+    #print "* [[$title]]\n";
     $title =~ s#^:##;
     $u{$title}++;
   }
 
   foreach my $title (@{$ns->{5}}) {
-    $title =~ s#^(Project|Wikipedia) talk##;
+    #print "* [[$title]]\n";
+    $title =~ s#^(Project|Wikipedia) talk#$1#;
     $title =~ s#^:##;
     $u{$title}++;
   }
@@ -266,17 +291,26 @@ sub outputAdmin2 {
   my $port = outputCategory('portal', makePortalList($nsl));
   $mainContent .= join('', @$port);
 
-  my $temp = outputCategory('template', makePortalList($nsl));
+  my $temp = outputCategory('template', makeTemplateList($nsl));
   $mainContent .= join('', @$temp);
 
   my $proj = outputCategory('project', makeProjectList($nsl));
   $mainContent .= join('', @$proj);
 
   my $time_subst = WIKI_TIME;
+  my %count = (
+    file     => scalar @$file,
+    category => scalar @$cat,
+    portal   => scalar @$port,
+    template => scalar @$temp,
+    project  => scalar @$proj,
+    total    => scalar @$file + scalar @$cat + scalar @$port + scalar @$temp + scalar @$proj,
+  );
+
   my $wikiContent = qq({{WP:WPOR-Nav}}
 This table was constructed from categories, images, portal, project, and templates tagged with {{tl|WikiProject Oregon}} (or any other article in [[:category:WikiProject Oregon articles]]) as of $time_subst. This list makes possible [http://en.wikipedia.org/w/index.php?title=Special:Recentchangeslinked&target=Wikipedia:WikiProject_Oregon/Admin2 Recent WP:ORE non-article changes].
 
-There are TODO images (now called "file"), TODO categories, TODO portal pages, TODO templates, and TODO project pages totaling TODO pages.
+There are $count{file} images (now called "file"), $count{category} categories, $count{portal} portal pages, $count{template} templates, and $count{project} project pages totaling $count{total} pages.
 
 <small>''See also: [[Wikipedia:WikiProject Oregon/Admin]] for article entries''</small>
 
@@ -286,7 +320,17 @@ There are TODO images (now called "file"), TODO categories, TODO portal pages, T
 
 [[Category:WikiProject Oregon]]
 );
-  $tb->replacePage('User:TedderBot/AOP/admin2', $wikiContent, 'update /admin2 page with all listings (bot edit)');
+
+  unless ($NOPOST) {
+    my $location = 'User:TedderBot/AOP/admin2';
+    unless ($DEBUG) {
+      # TODO: uncomment actual location
+      #$location = 'Wikipedia:WikiProject Oregon/Admin2';
+    }
+    $tb->replacePage($location, $wikiContent, "update page with $count{total} total listings (bot edit)");
+  }
+
+  appendLog("Updated [[$location]] with the following: $count{file} images,$count{category} categories, $count{portal} portals, $count{template} templates, $count{project} project pages (total: $count{total} pages).");
 }
 
 sub outputCategory {
