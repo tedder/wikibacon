@@ -87,6 +87,7 @@ my $catlist = $mw->list ( { action => 'query',
 
 my $sorted = {};
 foreach my $entry (@$catlist) {
+  #print Dumper($entry);
   my $namespace = $entry->{ns};
   my $title = $entry->{title};
 
@@ -95,6 +96,7 @@ foreach my $entry (@$catlist) {
   # make sure we didn't end up with too-early articles.
   next if ($time < $start_epoch);
   $entry->{day} = strftime('%Y-%m-%d', gmtime $time);
+  $entry->{user} = get_creator($mw, $title, $entry->{pageid});
 
   push @{$sorted->{$namespace}{$time}}, $entry;
   #my $dtitle = decode_utf8($title);
@@ -105,6 +107,20 @@ my $output = output_entries($sorted);
 post_output($tb, $output);
 
 exit;
+
+sub get_creator {
+  my ($mw, $title, $pageid) = @_;
+
+  my $info = $mw->api( {
+    action  => 'query',
+    prop    => 'revisions',
+    titles  => $title,
+    rvdir   => 'newer',
+    rvlimit => 1,
+  });
+  my $user = $info->{query}{pages}{$pageid}{revisions}[0]{user};
+  return $user;
+}
 
 sub post_output {
   my ($tb, $wikiContent) = @_;
@@ -152,7 +168,11 @@ sub output_namespace {
       #else {
       #  $ret .= "* '''$$entry{day}'''";
       #}
-      $ret .= "* '''$$entry{day}''' [[$$entry{title}]]\n";
+      my $user = "";
+      if ($entry->{user}) {
+        $user .= "created by {{User|$$entry{user}}}";
+      }
+      $ret .= "* '''$$entry{day}''' [[$$entry{title}]] $user\n";
     }
   }
 
