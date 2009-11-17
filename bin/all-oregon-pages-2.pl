@@ -56,6 +56,10 @@ GetOptions ("nopost"    => \$NOPOST,
 my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => 0 );
 my $mw = $tb->getMWAPI();
 
+unless($tb->okayToRun()) {
+  die "we are not approved to run. outta here.";
+}
+
 # get some page contents
 #my $page = $mw->get_page( { title => 'Wikipedia:WikiProject Oregon/Admin' } );
 
