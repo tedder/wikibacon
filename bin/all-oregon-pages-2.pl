@@ -87,7 +87,9 @@ foreach my $entry (@$backlist) {
 
   # Skip the Wikipedia: projects that link to here. We only want the ones
   # that are in the category, not all the {{tlx|WPOR}} type links.
-  if ($namespace == 4 || $namespace == 5) {
+  #
+  # Skip templates too.
+  if ($namespace == 4 || $namespace == 5 || $namespace == 10 || $namespace == 11) {
     #print "backlinks: $title .. namespace: $namespace\n";
     next;
   }
@@ -329,7 +331,7 @@ sub outputAdmin2 {
   my $wikiContent = qq({{WP:WPOR-Nav}}
 This table was constructed from categories, images, portal, project, and templates tagged with {{tl|WikiProject Oregon}} (or any other article in [[:category:WikiProject Oregon articles]]) as of $time_subst. This list makes possible [http://en.wikipedia.org/w/index.php?title=Special:Recentchangeslinked&target=Wikipedia:WikiProject_Oregon/Admin2 Recent WP:ORE non-article changes].
 
-There are $count{file} images (now called "file"), $count{category} categories, $count{portal} portal pages, $count{template} templates, and $count{project} project pages totaling $count{total} pages.
+There are $count{file} media files (previously called images), $count{category} categories, $count{portal} portal pages, $count{template} templates, and $count{project} project pages totaling $count{total} pages.
 
 <small>''See also: [[Wikipedia:WikiProject Oregon/Admin]] for article entries''</small>
 
