@@ -169,10 +169,12 @@ sub output_namespace {
       #  $ret .= "* '''$$entry{day}'''";
       #}
       my $user = "";
+      my $txt_title = $$entry{title};
+      $txt_title =~ s#^(Wikipedia:|User:.*?/)Books/##;
       if ($entry->{user}) {
         $user .= "created by {{User|$$entry{user}}}";
       }
-      $ret .= "* '''$$entry{day}''' [[$$entry{title}]] $user\n";
+      $ret .= "* '''$$entry{day}''' [[$$entry{title}|$txt_title]] $user\n";
     }
   }
 
