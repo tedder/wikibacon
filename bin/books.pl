@@ -95,7 +95,7 @@ foreach my $entry (@$catlist) {
 
   # make sure we didn't end up with too-early articles.
   next if ($time < $start_epoch);
-  $entry->{day} = strftime('%d-%m-%Y', gmtime $time);
+  $entry->{day} = strftime('%d %b %Y', gmtime $time);
   $entry->{user} = get_creator($mw, $title, $entry->{pageid});
 
   push @{$sorted->{$namespace}{$time}}, $entry;
