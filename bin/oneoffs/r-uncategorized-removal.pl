@@ -54,7 +54,7 @@ foreach my $entry (@$backlist) {
 
   #process_article($ref);
   process_article($title);
-  print "title: $title, namespace: $namespace\n";
+  #print "title: $title, namespace: $namespace\n";
 
 }
 
@@ -70,5 +70,11 @@ sub process_article {
   my $content = $page->{'*'};
   $content =~ s/\s*{{R uncategorized.*?}}\s*//ig;
 
-  print "final content: |$content|\n";
+  if ($content eq $page->{'*'}) {
+    print "no change on page: '$title'\n";
+  }
+
+  my $es = 'Removing [[:Template:R uncategorized]] per [[Wikipedia:Templates for discussion/Log/2009 December 1#Template:R uncategorized|TfD]]';
+
+  #print "final content: |$content|\n";
 }
