@@ -25,11 +25,17 @@
 ###############################################################################
 
 
-use strict;
 use Data::Dumper;
+use CGI qw/-utf8/;
+use Unicode::UCD 'charinfo';
+use Encode 'decode_utf8';
+
+use strict;
+
 use lib '/home/tedt/git/wikibacon/';
 use TedderBot::UserContribs;
 
+binmode STDOUT, ":utf8";
 print "hello world!\n";
 
 my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => 1 );
@@ -41,9 +47,8 @@ my $backlist = $mw->list ( { action => 'query',
   eititle => 'Template:R uncategorized',
   eilimit => '5',
   #ucprop => 'ids|title|timestamp',
-  { max => 2,
-    hook => &process_article
-  }
+  { max => 2, }
+  #hook => &process_article
  } ) || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
 
 my $count = 0;
@@ -54,7 +59,8 @@ foreach my $entry (@$backlist) {
 
   #process_article($ref);
   process_article($title);
-  #print "title: $title, namespace: $namespace\n";
+
+#if ($count > 5) { die "seen 5."; }
 
 }
 
@@ -68,7 +74,28 @@ sub process_article {
 
   my $page = $mw->get_page( { title => $title } );
   my $content = $page->{'*'};
-  $content =~ s/\s*{{R uncategorized.*?}}\s*//ig;
+  if ($content =~ m/{{bots/) {
+    print "exclusion page, skipping: $title\n";
+    return 0;
+  }
+
+  $content =~ s/\s*{{R (uncategorized|from \.\.\.).*?}}\s*//ig;
+
+  #print "title: $title .. content: $content\n";
+
+  if ($content =~ m/\#redirect\s*\[\[(.*?)\]\]/ig) {
+    my $target = $1;
+
+print "comparing $title / $target\n";
+    if (lc $title eq lc $target) {
+      print "resort to alternative capitalization: $title / $target\n";
+    } elsif (lc $title eq strip_diacritics(lc $target)) {
+      print "resort to stripped diacritics: $title / $target\n";
+    }
+  } else {
+    print "couldn't find redirect: $title / $content\n";
+    exit;
+  }
 
   if ($content eq $page->{'*'}) {
     print "no change on page: '$title'\n";
@@ -78,3 +105,38 @@ sub process_article {
 
   #print "final content: |$content|\n";
 }
+
+
+# diacritics code stolen (and modified) from here:
+# http://www.lemoda.net/perl/strip-diacritics/index.html
+sub strip_diacritics
+{
+    my ($diacritics_text) = @_;
+    my @characters = split '', $diacritics_text;
+    for my $character (@characters) {
+        # Reject non-word characters
+        next unless $character =~ /\w/;
+        my $decomposed = decompose($character);
+    }
+    my $stripped_text = join '', @characters;
+    return $stripped_text;
+}
+
+# Decompose one character. This is the core part of the program.
+
+sub decompose
+{
+    my ($character) = @_;
+    # Get the Unicode::UCD decomposition.
+    my $charinfo = charinfo (ord $character);
+    my $decomposition = $charinfo->{decomposition};
+    # Give up if there is no decomposition for $character
+    return $character unless $decomposition;
+    # Get the first character of the decomposition
+    my @decomposition_chars = split /\s+/, $decomposition;
+    $character = chr hex $decomposition_chars[0];
+    # A character may have multiple decompositions, so repeat this
+    # process until there are none left.
+    return decompose ($character);
+}
+

@@ -81,7 +81,7 @@ $newText .= qq(\n$numArticles unique articles have been edited by both [[User:$u
 
 # don't bother showing results if they haven't edited articles together.
 if ($numArticles) {
-  $newText .= qq(\n===Close edits===\nAmong [http://toolserver.org/~bjweeks/cgi-bin/wikistalk.py?namespace=0&user1=$user1&user2=$user2&user3=&user4=&user5=&user6=&user7=&user8=&user9=&user10= pages that both users have edited], this list shows the pages where their edits were closest in time. This usually reveals periods of [[Wikipedia:Consensus|close collaboration]] or [[Wikipedia:Edit war|edit wars]] between two editors.\n);
+  $newText .= qq(\n===Close edits===\nAmong [http://toolserver.org/~mzmcbride/cgi-bin/wikistalk.py?namespace=0&user1=$user1&user2=$user2&user3=&user4=&user5=&user6=&user7=&user8=&user9=&user10= pages that both users have edited], this list shows the pages where their edits were closest in time. This usually reveals periods of [[Wikipedia:Consensus|close collaboration]] or [[Wikipedia:Edit war|edit wars]] between two editors.\n);
   $newText .= $tb->showCloseEdits(5);
 
   $newText .= qq(\n===First edits===\nAmong pages that both users have edited, this list shows where both made edits the earliest, without regard to how soon one edit was after the other. This may be useful in determining when the two editors first "met" one another.\n);

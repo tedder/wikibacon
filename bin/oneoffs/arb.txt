@@ -1,0 +1,5 @@
+start: Thu Oct  1 14:35:18 2009
+talk edits over 30
+article edits over 30
+total edits (0) over 30
+$VAR1 = {};

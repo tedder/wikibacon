@@ -37,7 +37,7 @@ use constant WIKI_LOGTIME => '{{subst:CURRENTYEAR}}-{{subst:CURRENTMONTH}}-{{sub
 
 
 # run through the process, but don't acutally output to Wikipedia.
-my $NOPOST = 0; 
+my $NOPOST = 1; 
 
 # Output to the debug location, not the ACTUAL location. Might also cause
 # messages to STDOUT/STDERR.

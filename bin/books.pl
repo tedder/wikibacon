@@ -132,7 +132,7 @@ sub post_output {
       # TODO: uncomment actual location
       #$location = 'Wikipedia:Books/New books';
     }
-    my $ret = $tb->replacePage($location, $wikiContent, "update page latest results (bot edit)");
+    my $ret = $tb->replacePage($location, $wikiContent, "update page with latest results (bot edit)");
     $status = 'succeeded';
     unless ($ret) { $status = 'FAILED'; }
     #appendLog("Updated [[$location]] with $count articles, $status.");
