@@ -86,7 +86,7 @@ Runtime: $runtime seconds
 );
 
 
-$tb->replacePage('User:WikiBacon/Database reports/Articles containing links to the user space version 2', $text, "updated page. ($runtime seconds)");
+$tb->replacePage('User:TedderBot/Database reports/Articles containing links to the user space version 2', $text, "updated page. ($runtime seconds)");
 
 exit;
 
