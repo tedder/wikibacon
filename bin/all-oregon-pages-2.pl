@@ -37,7 +37,7 @@ use constant WIKI_LOGTIME => '{{subst:CURRENTYEAR}}-{{subst:CURRENTMONTH}}-{{sub
 
 
 # run through the process, but don't acutally output to Wikipedia.
-my $NOPOST = 1; 
+my $NOPOST = 0; 
 
 # Output to the debug location, not the ACTUAL location. Might also cause
 # messages to STDOUT/STDERR.
@@ -183,8 +183,7 @@ There are $count entries, all articles.
   unless ($NOPOST) {
     my $location = 'User:TedderBot/AOP/admin';
     unless ($DEBUG) {
-      # TODO: uncomment actual location
-      #$location = 'Wikipedia:WikiProject Oregon/Admin';
+      $location = 'Wikipedia:WikiProject Oregon/Admin';
     }
     my $ret = $tb->replacePage($location, $wikiContent, "update page with $count articles (bot edit)");
     my $status = 'succeeded';
@@ -346,8 +345,7 @@ There are $count{file} media files (previously called images), $count{category} 
   unless ($NOPOST) {
     my $location = 'User:TedderBot/AOP/admin2';
     unless ($DEBUG) {
-      # TODO: uncomment actual location
-      #$location = 'Wikipedia:WikiProject Oregon/Admin2';
+      $location = 'Wikipedia:WikiProject Oregon/Admin2';
     }
     #print "at RP, loc: $location\n";
     my $ret = $tb->replacePage($location, $wikiContent, "update page with $count{total} total listings (bot edit)");

@@ -66,7 +66,10 @@ unless($tb->okayToRun()) {
 
 
 my $articles = userspace_links($mw, 'Wikipedia:Database reports/Articles       containing links to the user space');
-my $text = "Last run at " . WIKI_TIME . qq(, based on [[Wikipedia:Database_reports/Articles_containing_links_to_the_user_space]].\n{| class="wikitable sortable plainlinks" style="width:100%; margin:auto;"
+my $text = "Last run at " . WIKI_TIME . qq(, based on [[Wikipedia:Database reports/Articles containing links to the user space]].
+
+Please see the [[WP:VPP]] discussion: [[Wikipedia:Village pump (policy)/Archive 71#Userspace links in main space]]
+\n{| class="wikitable sortable plainlinks" style="width:100%; margin:auto;"
 |- style="white-space:nowrap;"
 ! Article
 ! First match
