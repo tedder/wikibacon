@@ -61,5 +61,6 @@ unless($tb->okayToRun()) {
 #my $page = $mw->get_page( { title => 'Wikipedia:WikiProject Oregon/Admin' } );
 
 
-my $ret = $tb->isOregonArticle("Pioneer Courthouse Square");
+#my $ret = $tb->isOregonArticle("Pioneer Courthouse Square");
+my $ret = $tb->evalUserContribs('PeteForsyth');
 print "ret: $ret\n";

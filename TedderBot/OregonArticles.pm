@@ -43,14 +43,18 @@ our @ISA = 'TedderBot';
 sub isOregonArticle {
   my ($self, $title) = @_;
 
-  $self->{alist} || $self->getLinks('Wikipedia:WikiProject Oregon/Admin');
+  $self->{alist} ||= $self->getLinks('Wikipedia:WikiProject Oregon/Admin');
+  if ($self->{alist}{$title}) {
+    return 1;
+  }
+  return undef;
 }
 
 
 sub getLinks {
   my ($self, $title) = @_;
 
-  my @list;
+  my %list;
   my $mw = $self->getMWAPI();
 
   # future: check uclimit to make sure we haven't gone over the
@@ -76,17 +80,71 @@ my $continue = '';
     # Should only have one pageid there, so we'll just shift off the first one.
     my @id = keys %{$aret->{query}{pages}};
     my $alist = $aret->{query}{pages}{$id[0]}{links};
-#print "alist: ", Dumper($alist);
+#print "alist: ", Dumper($alist); exit;
     foreach my $entry (@$alist) {
 #print "entry: ", Dumper($entry);
       my $title = $entry->{title};
-      push @list, $title;
+      $list{$title}++;
     }
 
   } while ($param{plcontinue});
 
 #print "output: ", Dumper($alist), "\n";
-print "contribs: ", scalar @list, "\n";
+#print "contribs: ", scalar @list, "\n";
+  return \%list;
+  #$self->_debug("number of contribs found: ", scalar @$alist, "\n");
+}
+
+sub evalUserContribs {
+  my ($self, $user) = @_;
+
+  my $mw = $self->getMWAPI();
+
+  #my %param = (
+  #  action => 'query',
+  #  prop => 'usercontribs',
+  #  ucuser => $user,
+  #  uclimit =>'5',
+  #
+  #  { max => 50000 }
+  #  #pllimit =>'5', { max => 5 }
+  #);
+  my %param = (
+    action => 'query',
+    list => 'usercontribs',
+    #ucuser => $user,
+    ucuser => 'User:' . ucfirst(lc $user),
+    uclimit =>'5',
+
+    { max => 50000 }
+  );
+print Dumper(\%param);
+
+
+  do {
+    my $aret = $mw->api( \%param )
+      || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
+print Dumper($aret); exit;
+
+    # pick off our continue parameter.
+    $param{uccontinue} = $aret->{'query-continue'}{links}{plcontinue};
+#print Dumper($aret); exit;
+
+    # Should only have one pageid there, so we'll just shift off the first one.
+    my @id = keys %{$aret->{query}{pages}};
+    #my $alist = $aret->{query}{pages}{$id[0]}{links};
+#print "alist: ", Dumper($alist); exit;
+    #foreach my $entry (@$alist) {
+#print "entry: ", Dumper($entry);
+      #my $title = $entry->{title};
+      #$list{$title}++;
+    #}
+
+  } while ($param{uccontinue});
+
+#print "output: ", Dumper($alist), "\n";
+#print "contribs: ", scalar @list, "\n";
+  #return \%list;
   #$self->_debug("number of contribs found: ", scalar @$alist, "\n");
 }
 
