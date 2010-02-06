@@ -31,10 +31,12 @@ use Encode;
 use Getopt::Long;
 use Time::CTime;
 use Time::ParseDate;
+use Time::Local;
 use lib '/home/tedt/git/wikibacon/';
 use TedderBot::OregonArticles;
 
-use constant NOW => time();
+use constant NOW => Time::Local::timegm(gmtime(time()));
+use constant EPOCH_OFFSET => Time::Local::timegm(gmtime(time())) - Time::Local::timegm(localtime(time()));
 
 # run through the process, but don't acutally output to Wikipedia.
 my $NOPOST = 0; 
@@ -78,19 +80,23 @@ sub parseParticipants {
 
   my $content;
   $content .= qq(==Users marked as active==
-{| class="wikitable" border="1"
+{|class="wikitable sortable"
 ! User
 ! Last Oregon edit (days)
+! Last Oregon edit time
 ! Last Wiki edit (days)
+! Last Wiki edit time
 );
   $content .= checkParticipantList($tb, keys %{$data->{active}});
   $content .= "|-\n|}\n";
 
   $content .= qq(==Users marked as inactive==
-{| class="wikitable" border="1"
+{|class="wikitable sortable"
 ! User
 ! Last Oregon edit (days)
+! Last Oregon edit time
 ! Last Wiki edit (days)
+! Last Wiki edit time
 );
   $content .= checkParticipantList($tb, keys %{$data->{inactive}});
   $content .= "|-\n|}\n";
@@ -106,14 +112,17 @@ sub checkParticipantList {
   my $ret = '';
   foreach my $user (@_) {
 print "testing $user\n";
-    my $ret = $tb->evalUserContribs($user);
-    #print "dumped ret: ", Dumper($ret), "\n"; exit;
-    my $lastOregon = daysDelta($ret->{ORmax});
-    my $lastAny = daysDelta($ret->{max});
+    my $uc = $tb->evalUserContribs(ucfirst lc $user);
+    my $lastOregon = daysDelta($uc->{ORmax});
+    my $lastOregonPretty = scalar gmtime($uc->{ORmax});
+    my $lastAny = daysDelta($uc->{max});
+    my $lastAnyPretty = scalar gmtime($uc->{max});
     $ret .= qq(|-
-| $user
+| [[User:$user|$user]]
 | $lastOregon
+| $lastOregonPretty
 | $lastAny
+| $lastAnyPretty
 );
   }
 
@@ -121,7 +130,12 @@ print "testing $user\n";
 }
 
 sub daysDelta {
-  return (NOW - $_[0]);
+  my $offset = daysFromSeconds((NOW - $_[0]) + EPOCH_OFFSET);
+  if ($offset < 0) {
+    print STDERR "Uh oh, negative offset ($offset). Edit time: $_[0] (", scalar gmtime($_[0]), ") .. NOW time: ", NOW, "(", scalar gmtime(NOW), ")\n";
+  }
+
+  return $offset;
 }
 
 sub daysFromSeconds {
@@ -141,7 +155,6 @@ sub getParticipants {
 #print "line: $line\n";
     if ($line =~ /^\s*\*.*?\[\[user:(.+?)(\|.*)?\]\]/i) {
       my $user = $1;
-#print "user: $user\n"; exit;
       $ret->{$type}{$user}++;
     }
     # couldn't get the user name that way? Try again with user talk: link.
@@ -151,9 +164,8 @@ sub getParticipants {
       $ret->{$type}{$user}++;
     }
 
-    if ($line =~ /===.*inactive.*===/) { $type = "inactive"; }
+    if ($line =~ /===.*inactive.*===/i) { $type = "inactive"; }
   }
 
-  #print "list: ", Dumper($ret), "\n"; exit;
   return $ret;
 }
