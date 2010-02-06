@@ -34,6 +34,8 @@ use Time::ParseDate;
 use lib '/home/tedt/git/wikibacon/';
 use TedderBot::OregonArticles;
 
+use constant NOW => time();
+
 # run through the process, but don't acutally output to Wikipedia.
 my $NOPOST = 0; 
 
@@ -60,7 +62,98 @@ unless($tb->okayToRun()) {
 
 #my $page = $mw->get_page( { title => 'Wikipedia:WikiProject Oregon/Admin' } );
 
+my $data = getParticipants($mw);
+my $content = parseParticipants($mw, $tb, $data);
 
-#my $ret = $tb->isOregonArticle("Pioneer Courthouse Square");
-my $ret = $tb->evalUserContribs('PeteForsyth');
-print "ret: $ret\n";
+my $ret = $tb->replacePage('User:TedderBot/OreBot/MemberActivity', $content, "most recent member activity results");
+
+###my $ret = $tb->isOregonArticle("Pioneer Courthouse Square");
+#my $ret = $tb->evalUserContribs('PeteForsyth');
+#print "dumped ret: ", Dumper($ret), "\n";
+
+exit;
+
+sub parseParticipants {
+  my ($mw, $tb, $data) = @_;
+
+  my $content;
+  $content .= qq(==Users marked as active==
+{| class="wikitable" border="1"
+! User
+! Last Oregon edit (days)
+! Last Wiki edit (days)
+);
+  $content .= checkParticipantList($tb, keys %{$data->{active}});
+  $content .= "|-\n|}\n";
+
+  $content .= qq(==Users marked as inactive==
+{| class="wikitable" border="1"
+! User
+! Last Oregon edit (days)
+! Last Wiki edit (days)
+);
+  $content .= checkParticipantList($tb, keys %{$data->{inactive}});
+  $content .= "|-\n|}\n";
+
+  return $content;
+}
+
+sub checkParticipantList {
+  my $tb = shift; # rest of @_ is the list of users
+  return undef unless scalar @_;
+
+#print Dumper(\@_);
+  my $ret = '';
+  foreach my $user (@_) {
+print "testing $user\n";
+    my $ret = $tb->evalUserContribs($user);
+    #print "dumped ret: ", Dumper($ret), "\n"; exit;
+    my $lastOregon = daysDelta($ret->{ORmax});
+    my $lastAny = daysDelta($ret->{max});
+    $ret .= qq(|-
+| $user
+| $lastOregon
+| $lastAny
+);
+  }
+
+  return $ret;
+}
+
+sub daysDelta {
+  return (NOW - $_[0]);
+}
+
+sub daysFromSeconds {
+  return sprintf('%.1f', $_[0]/(3600*24));
+}
+
+sub getParticipants {
+  my ($mw) = @_;
+
+  my $ret = {};
+  my $type = 'active';
+
+  my $page = $mw->get_page( { title => 'Wikipedia:WikiProject Oregon/Participants' } );
+  my $content = $page->{'*'};
+#print "content: $content\n";
+  foreach my $line (split(/[\r\n]/, $content)) {
+#print "line: $line\n";
+    if ($line =~ /^\s*\*.*?\[\[user:(.+?)(\|.*)?\]\]/i) {
+      my $user = $1;
+#print "user: $user\n"; exit;
+      $ret->{$type}{$user}++;
+    }
+    # couldn't get the user name that way? Try again with user talk: link.
+    elsif ($line =~ /^\s*\*.*?\[\[(user talk|special:contributions\/):(.+?)(\|.*)?\]\]/i) {
+      my $user = $2;
+      print "user found by talk/contribs, $user with line: $line\n";
+      $ret->{$type}{$user}++;
+    }
+
+    if ($line =~ /===.*inactive.*===/) { $type = "inactive"; }
+  }
+
+  #print "list: ", Dumper($ret), "\n"; exit;
+  return $ret;
+}

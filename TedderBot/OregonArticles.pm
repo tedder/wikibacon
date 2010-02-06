@@ -122,7 +122,7 @@ sub evalUserContribs {
   );
 
 #print Dumper(\%param); 
-my $ret = {};
+  my $ret = {};
 
 
   do {
@@ -163,16 +163,22 @@ my $ret = {};
       #my $title = $entry->{title};
       #$list{$title}++;
     #}
-    print Dumper($ret->{"query-continue"}); exit;
+    #print "q-c: ", Dumper($aret->{"query-continue"}); exit;
+    #print "ret return: ", Dumper($aret); exit;
+    #print Dumper($ret->{"query-continue"}); exit;
     $param{uccontinue} = $aret->{'query-continue'}{links}{plcontinue};
 
   } while ($param{uccontinue});
-print Dumper($ret);
+#print Dumper($ret);
+#print "ormax: ", scalar gmtime $ret->{ORmax}, "\n";
+#print "max: ", scalar gmtime $ret->{max}, "\n";
 
 #print "output: ", Dumper($alist), "\n";
 #print "contribs: ", scalar @list, "\n";
   #return \%list;
   #$self->_debug("number of contribs found: ", scalar @$alist, "\n");
+
+  return $ret;
 }
 
 
