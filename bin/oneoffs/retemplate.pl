@@ -34,6 +34,20 @@ use TedderBot;
 
 use constant WIKI_LOGTIME => '{{subst:CURRENTYEAR}}-{{subst:CURRENTMONTH}}-     {{subst:CURRENTDAY2}} {{subst:CURRENTTIME}}';
 
+# Good for trial runs- set much higher when it is running.
+use constant MAX_TO_CHANGE => 1;
+
+# Number of seconds between edits. Running time (in hours) 
+# can be approximated by NUM_PAGES * SLEEP_TIME / 3600
+use constant SLEEP_TIME    => 30;
+
+# Don't include "Template:" namespace. Just the specific template name.
+# It'll look for "Template:$CHANGE_FROM" and will change {{$CHANGE_FROM
+# to {{$CHANGE_TO. Note it doesn't look for {{WikiProject $CHANGE_FROM.
+my $CHANGE_FROM = "Children'sLiteratureWikiProject";
+# Again, no namespace. Case is important here.
+my $CHANGE_TO   = "WikiProject Children's literature";
+
 # If true, run through the process, but don't acutally output to Wikipedia.
 my $NOPOST = 0; 
 
@@ -57,7 +71,7 @@ unless($tb->okayToRun()) {
 
 my $backlist = $mw->list ( { action => 'query',
   list => 'backlinks',
-  bltitle => 'Template:Space telescopes',
+  bltitle => 'Template:' . $CHANGE_FROM,
   blnamespace => '0',
   bllimit => '500',
   blredirect => '500',
@@ -70,12 +84,14 @@ my $backlist = $mw->list ( { action => 'query',
 
 my $emblist = $mw->list ( { action => 'query',
   list => 'embeddedin',
-  eititle => 'Template:Space telescopes',
+  eititle => 'Template:' . $CHANGE_FROM,
   eilimit => '500',
   #ucprop => 'ids|title|timestamp',
-  { max => 2, }
+  { max => 200, }
   #hook => &process_article
  } ) || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
+
+print "Collected transcluded pages: ", (scalar @$backlist + scalar @$emblist), " possibilities\n";
 
 my %seen;
 my $count = 0;
@@ -93,18 +109,30 @@ foreach my $entry (@$backlist, @$emblist) {
      next;
   }
 
-  (my $new_c = $c) =~ s/{{Space telescopes/{{Space observatories/g;
+  (my $new_c = $c) =~ s/{{$CHANGE_FROM/{{$CHANGE_TO/g;
   if ($new_c eq $c) {
      _debug(":Couldn't change [[$title]], didn't match regex.\n");
   } elsif (! $NOPOST) {
 
     # this is a safety trigger to make sure we don't actually edit
     # real articles without approval. Remove before flight.
-    print "updating $title\n"; exit;
+    print "updating $title\n";
+    # Remove exit before flight.
+    # exit;
 
 
-    $tb->replacePage($title, $new_c, "replace [[:Template:Space telescopes]] with [[:Template:Space observatories]] (bot edit)");
+    $tb->replacePage($title, $new_c, "replace [[:Template:$CHANGE_FROM]] with [[:Template:$CHANGE_TO]] (bot edit)");
     _debug(":updated [[$title]]\n");
+
+    # testing: make sure we don't change more than N.
+    if (++$count >= MAX_TO_CHANGE) {
+      _debug("\nWe've changed the maximum allowed pages. Outta here.\n");
+      last;
+    }
+
+    # Don't hit the servers too fast, and make sure there is time
+    # to fix a problem before it becomes a bigger problem.
+    sleep SLEEP_TIME;
   }
 
   #print "done.";
