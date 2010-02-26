@@ -121,7 +121,7 @@ foreach my $entry (@$backlist, @$emblist) {
     # exit;
 
 
-    $tb->replacePage($title, $new_c, "replace [[:Template:$CHANGE_FROM]] with [[:Template:$CHANGE_TO]] (bot edit)");
+    $tb->replacePage($title, $new_c, "replace [[:Template:$CHANGE_FROM]] with [[:Template:$CHANGE_TO]] through [[User:TedderBot/TranscludeReplace]] (bot edit)");
     _debug(":updated [[$title]]\n");
 
     # testing: make sure we don't change more than N.
