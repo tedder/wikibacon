@@ -119,9 +119,10 @@ sub userspace_links {
   my $ret = [];
   my $page = $mw->get_page( { title => $title } );
   foreach my $line (split(/[\n\r]/, $page->{'*'})) {
-    if ($line =~ /plenr\|1=(.*)?}}/) {
+    #if ($line =~ /plenr\|1=(.*)?}}/) {
+    if ($line =~ /\|\s+\[\[(.*)?\]\]/) {
       my $article = $1;
-      #print "article: $article\n"; exit;
+      #print "article: $article\n";
       push @$ret, $article;
     }
   }

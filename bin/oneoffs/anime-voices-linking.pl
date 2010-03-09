@@ -41,13 +41,6 @@ use constant MAX_TO_CHANGE => 7500;
 # can be approximated by NUM_PAGES * SLEEP_TIME / 3600
 use constant SLEEP_TIME    => 2;
 
-# Don't include "Template:" namespace. Just the specific template name.
-# It'll look for "Template:$CHANGE_FROM" and will change {{$CHANGE_FROM
-# to {{$CHANGE_TO. Note it doesn't look for {{WikiProject $CHANGE_FROM.
-my $CHANGE_FROM = "Children'sLiteratureWikiProject";
-# Again, no namespace. Case is important here.
-my $CHANGE_TO   = "WikiProject Children's literature";
-
 # If true, run through the process, but don't acutally output to Wikipedia.
 my $NOPOST = 0; 
 
@@ -71,7 +64,7 @@ unless($tb->okayToRun()) {
 
 my $backlist = $mw->list ( { action => 'query',
   list => 'backlinks',
-  bltitle => 'Template:' . $CHANGE_FROM,
+  bltitle => 'Template:Anime voices',
   blnamespace => '0',
   bllimit => '500',
   blredirect => '500',
@@ -84,7 +77,7 @@ my $backlist = $mw->list ( { action => 'query',
 
 my $emblist = $mw->list ( { action => 'query',
   list => 'embeddedin',
-  eititle => 'Template:' . $CHANGE_FROM,
+  eititle => 'Template:Anime voices',
   eilimit => '500',
   #ucprop => 'ids|title|timestamp',
   { max => 200, }
@@ -93,6 +86,7 @@ my $emblist = $mw->list ( { action => 'query',
 
 print "Collected transcluded pages: ", (scalar @$backlist + scalar @$emblist), " possibilities\n";
 
+my %count;
 my %seen;
 my $count = 0;
 foreach my $entry (@$backlist, @$emblist) {
@@ -101,27 +95,47 @@ foreach my $entry (@$backlist, @$emblist) {
 
   next if $seen{$title}++;
 
+#print "title: $title\n";
   my $page = $mw->get_page( { title => $title } );
   my $c = $page->{'*'};
 
   if ($c =~ /{{(no)?bots/) {
+     ++$count{skip_bots};
      _debug("'''skipping [[$title]], bot exclusion.'''\n");
      next;
   }
 
-  (my $new_c = $c) =~ s/{{$CHANGE_FROM/{{$CHANGE_TO/g;
-  if ($new_c eq $c) {
-     _debug(":Couldn't change [[$title]], didn't match regex.\n");
-  } elsif (! $NOPOST) {
+  if ($c =~ /{{Anime voices|Animevoices|Anime voice(\|.*?)}}/i) {
+    my $original_string = $1;
 
+    if ($original_string =~ /\[\[/) {
+      _debug("template has some brackets, cowardly skipping so we don't mess up piping: $original_string\n");
+      ++$count{skip_brackets};
+      next;
+    }
+
+    my $replacement = parseTemplate($original_string);
+    if (lc $original_string eq lc $replacement) {
+      _debug("$title: no change.\n");
+      ++$count{no_change};
+    } else {
+      _debug("can haz change: $original_string / $replacement\n");
+      ++$count{change};
+    }
+
+  } else {
+     print "regex fail: $title\n";
+     _debug(":Couldn't change [[$title]], didn't match regex.\n");
+     next;
+  }
     # this is a safety trigger to make sure we don't actually edit
     # real articles without approval. Remove before flight.
-    print "updating $title\n";
+    #print "updating $title\n";
     # Remove exit before flight.
     # exit;
 
 
-    $tb->replacePage($title, $new_c, "replace [[:Template:$CHANGE_FROM]] with [[:Template:$CHANGE_TO]] through [[User:TedderBot/TranscludeReplace]] (bot edit)");
+    #$tb->replacePage($title, $new_c, "replace [[:Template:$CHANGE_FROM]] with [[:Template:$CHANGE_TO]] through [[User:TedderBot/TranscludeReplace]] (bot edit)");
     _debug(":updated [[$title]]\n");
 
     # testing: make sure we don't change more than N.
@@ -132,15 +146,16 @@ foreach my $entry (@$backlist, @$emblist) {
 
     # Don't hit the servers too fast, and make sure there is time
     # to fix a problem before it becomes a bigger problem.
-    sleep SLEEP_TIME;
-  }
+    #sleep SLEEP_TIME;
+  #}
 
   #print "done.";
 
   #print "\n";
 }
 
-$tb->appendPage('User:TedderBot/TranscludeReplace/log', $LOG, WIKI_LOGTIME, "update TranscludeReplace log (bot edit)");
+#$tb->appendPage('User:TedderBot/TranscludeReplace/log', $LOG, WIKI_LOGTIME, "update TranscludeReplace log (bot edit)");
+print Dumper(\%count);
 
 _debug(":updated pages: $count\n");
 
@@ -148,4 +163,34 @@ exit;
 
 sub _debug {
   $LOG .= join('', @_);
+}
+sub parseTemplate {
+  my ($str) = @_;
+
+#print "PT str: $str\n";
+  # break the string apart- shift off the first, since we
+  # know what it is.
+  my @substr = split('\|', $str);
+  shift @substr;
+#print "substrs: ", join("--", @substr), "\n";
+
+  my @retbits;
+  foreach my $bit (@substr) {
+    #print "checking bit: $bit\n";
+    # is it already wikilinked? If not, make it so, Scotty.
+    if ($bit =~ /^\[\[.+\]\]$/) {
+      push @retbits, $bit;
+    } else {
+      push @retbits, '[[' . $bit . ']]';
+    }
+  }
+
+  # which template? "anime voices" or "anime voice"?
+  my $ret = join('|', 'Anime voices', @retbits);
+  if (scalar @retbits == 1) {
+    $ret = join('|', 'Anime voice', @retbits);
+  }
+
+  # build up a replacement string, return it.
+  return $ret;
 }

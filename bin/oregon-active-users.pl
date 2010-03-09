@@ -65,6 +65,8 @@ unless($tb->okayToRun()) {
 #my $page = $mw->get_page( { title => 'Wikipedia:WikiProject Oregon/Admin' } );
 
 my $data = getParticipants($mw);
+#my $data = { 'active' => { 'Little Mountain 5' => 1 }};
+#print Dumper($data); exit;
 my $content = parseParticipants($mw, $tb, $data);
 
 my $ret = $tb->replacePage('User:TedderBot/OreBot/MemberActivity', $content, "most recent member activity results");
@@ -112,7 +114,11 @@ sub checkParticipantList {
   my $ret = '';
   foreach my $user (@_) {
 print "testing $user\n";
-    my $uc = $tb->evalUserContribs(ucfirst lc $user);
+#my $ucf = ucfirst lc $user;
+my $ucf = $user;
+#$ucf =~ s/\s[a-z]/ [A-Z]/eg;
+#print "ucf: ", $ucf, " .. original: $user\n"; exit;
+    my $uc = $tb->evalUserContribs($ucf);
     my $lastOregon = daysDelta($uc->{ORmax});
     my $lastOregonPretty = scalar gmtime($uc->{ORmax});
     my $lastAny = daysDelta($uc->{max});

@@ -115,12 +115,12 @@ sub evalUserContribs {
 
   my $api_user = 'User:' . $user;
   if ($user =~ /^\d+\.\d+\.\d+\.\d+$/) { $api_user = $user; }
-print "checking $api_user\n";
+print "checking $api_user / $user\n";
   my %param = (
     action => 'query',
     list => 'usercontribs',
-    #ucuser => $user,
-    ucuser => $api_user,
+    ucuser => $user,
+    #ucuser => $api_user,
     uclimit =>'500',
 
     { max => 50000 }
