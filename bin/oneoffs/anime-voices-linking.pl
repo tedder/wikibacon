@@ -35,7 +35,7 @@ use TedderBot;
 use constant WIKI_LOGTIME => '{{subst:CURRENTYEAR}}-{{subst:CURRENTMONTH}}-     {{subst:CURRENTDAY2}} {{subst:CURRENTTIME}}';
 
 # Good for trial runs- set much higher when it is running.
-use constant MAX_TO_CHANGE => 7500;
+use constant MAX_TO_CHANGE => 10;
 
 # Number of seconds between edits. Running time (in hours) 
 # can be approximated by NUM_PAGES * SLEEP_TIME / 3600
@@ -100,43 +100,31 @@ foreach my $entry (@$backlist, @$emblist) {
   my $c = $page->{'*'};
 
   if ($c =~ /{{(no)?bots/) {
-     ++$count{skip_bots};
-     _debug("'''skipping [[$title]], bot exclusion.'''\n");
-     next;
+    ++$count{skip_bots};
+    _debug("'''skipping [[$title]], bot exclusion.'''\n");
+    next;
   }
 
-  if ($c =~ /{{Anime voices|Animevoices|Anime voice(\|.*?)}}/i) {
-    my $original_string = $1;
+  my $new_c = parseContent($c);
 
-    if ($original_string =~ /\[\[/) {
-      _debug("template has some brackets, cowardly skipping so we don't mess up piping: $original_string\n");
-      ++$count{skip_brackets};
-      next;
-    }
+  # this is a safety trigger to make sure we don't actually edit
+  # real articles without approval. Remove before flight.
 
-    my $replacement = parseTemplate($original_string);
-    if (lc $original_string eq lc $replacement) {
-      _debug("$title: no change.\n");
-      ++$count{no_change};
-    } else {
-      _debug("can haz change: $original_string / $replacement\n");
-      ++$count{change};
-    }
-
+  if ($new_c eq $c) {
+    print "done parsing, no changes to $title\n";
+    ++$count{no_changes};
+    _debug("done parsing, no changes to [[$title]]\n");
+    next;
   } else {
-     print "regex fail: $title\n";
-     _debug(":Couldn't change [[$title]], didn't match regex.\n");
-     next;
-  }
-    # this is a safety trigger to make sure we don't actually edit
-    # real articles without approval. Remove before flight.
-    #print "updating $title\n";
+    ++$count{changed_page};
+    #print "updating $title\n"; exit;
     # Remove exit before flight.
-    # exit;
+    #exit;
 
 
-    #$tb->replacePage($title, $new_c, "replace [[:Template:$CHANGE_FROM]] with [[:Template:$CHANGE_TO]] through [[User:TedderBot/TranscludeReplace]] (bot edit)");
+    $tb->replacePage($title, $new_c, "link anime voices, see [[User:TedderBot/AnimeVoiceLink]] (bot edit)");
     _debug(":updated [[$title]]\n");
+    print "updating $title\n";
 
     # testing: make sure we don't change more than N.
     if (++$count >= MAX_TO_CHANGE) {
@@ -147,19 +135,65 @@ foreach my $entry (@$backlist, @$emblist) {
     # Don't hit the servers too fast, and make sure there is time
     # to fix a problem before it becomes a bigger problem.
     #sleep SLEEP_TIME;
-  #}
+  }
 
   #print "done.";
 
   #print "\n";
 }
 
-#$tb->appendPage('User:TedderBot/TranscludeReplace/log', $LOG, WIKI_LOGTIME, "update TranscludeReplace log (bot edit)");
 print Dumper(\%count);
 
 _debug(":updated pages: $count\n");
+#$tb->appendPage('User:TedderBot/AnimeVoiceLink/log', $LOG, WIKI_LOGTIME, "update log (bot edit)");
 
 exit;
+
+sub parseContent {
+  my ($full_content) = @_;
+
+  my $changes = 0;
+  my $ret;
+
+  foreach my $line (split(/[\n\r]/, $full_content)) {
+    if ($line =~ /{{((Anime voices|Animevoices|Anime voice)\|(.*?))}}/i) {
+      my $template_used = $2;
+      my $original_string = $1;
+
+      if ($original_string =~ /\[\[/) {
+        _debug("template line has some brackets, cowardly skipping so we don't mess up piping: $line\n");
+        #++$count{skip_brackets};
+        $ret .= $line . "\n";
+        next;
+      }
+
+      my $replacement = parseTemplate($original_string);
+print "OS: $original_string\n";
+      if (lc $original_string eq lc $replacement) {
+        _debug("no change on line: $line\n");
+        $ret .= $line . "\n";
+        #++$count{no_change};
+      } else {
+        _debug("::can haz change: $original_string / $replacement\n");
+        print "can haz change: $original_string / $replacement\n";
+        ++$changes;
+
+        $line =~ s#\Q$original_string\E#$replacement#;
+#print "line: $line\n"; exit;
+        $ret .= $line . "\n";
+    }
+
+    } else {
+       # breaking up into lines, so of course there are lines that don't match.
+       #print "regex fail: $title\n";
+       #_debug(":Couldn't change [[$title]], didn't match regex.\n");
+       $ret .= $line . "\n";
+       next;
+    }
+  }
+
+  return $ret;
+}
 
 sub _debug {
   $LOG .= join('', @_);
@@ -180,6 +214,8 @@ sub parseTemplate {
     # is it already wikilinked? If not, make it so, Scotty.
     if ($bit =~ /^\[\[.+\]\]$/) {
       push @retbits, $bit;
+    } elsif ($bit eq '') {
+      print "skipping blank bit\n";
     } else {
       push @retbits, '[[' . $bit . ']]';
     }
