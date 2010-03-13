@@ -35,7 +35,7 @@ use TedderBot;
 use constant WIKI_LOGTIME => '{{subst:CURRENTYEAR}}-{{subst:CURRENTMONTH}}-     {{subst:CURRENTDAY2}} {{subst:CURRENTTIME}}';
 
 # Good for trial runs- set much higher when it is running.
-use constant MAX_TO_CHANGE => 10;
+use constant MAX_TO_CHANGE => 1;
 
 # Number of seconds between edits. Running time (in hours) 
 # can be approximated by NUM_PAGES * SLEEP_TIME / 3600
@@ -109,6 +109,8 @@ foreach my $entry (@$backlist, @$emblist) {
 
   # this is a safety trigger to make sure we don't actually edit
   # real articles without approval. Remove before flight.
+  chomp $new_c;
+  chomp $c;
 
   if ($new_c eq $c) {
     print "done parsing, no changes to $title\n";
