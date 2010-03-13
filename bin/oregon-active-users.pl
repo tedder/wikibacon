@@ -86,8 +86,10 @@ sub parseParticipants {
 ! User
 ! Last Oregon edit (days)
 ! Last Oregon edit time
+! Oregon edits
 ! Last Wiki edit (days)
 ! Last Wiki edit time
+! % of edits in Oregon
 );
   $content .= checkParticipantList($tb, keys %{$data->{active}});
   $content .= "|-\n|}\n";
@@ -97,8 +99,10 @@ sub parseParticipants {
 ! User
 ! Last Oregon edit (days)
 ! Last Oregon edit time
+! Oregon edits
 ! Last Wiki edit (days)
 ! Last Wiki edit time
+! % of edits in Oregon
 );
   $content .= checkParticipantList($tb, keys %{$data->{inactive}});
   $content .= "|-\n|}\n";
@@ -112,23 +116,33 @@ sub checkParticipantList {
 
 #print Dumper(\@_);
   my $ret = '';
-  foreach my $user (@_) {
-print "testing $user\n";
-#my $ucf = ucfirst lc $user;
-my $ucf = $user;
-#$ucf =~ s/\s[a-z]/ [A-Z]/eg;
-#print "ucf: ", $ucf, " .. original: $user\n"; exit;
+  foreach my $user (sort @_) {
+    # good way to test a single user
+    #next unless (lc $user eq 'esprqii');
+
+    #my $ucf = ucfirst lc $user;
+    my $ucf = $user;
     my $uc = $tb->evalUserContribs($ucf);
+    #print Dumper($uc); exit;
+
     my $lastOregon = daysDelta($uc->{ORmax});
     my $lastOregonPretty = scalar gmtime($uc->{ORmax});
+    my $editsOregon = $uc->{ORedit};
+    my $percentOregon = '-';
+    if ($uc->{ORedit} && $uc->{edit}) {
+      $percentOregon = sprintf('%.1f%%', ($uc->{ORedit} / $uc->{edit}) * 100);
+    }
+#print "pct: $percentOregon\n"; exit;
     my $lastAny = daysDelta($uc->{max});
     my $lastAnyPretty = scalar gmtime($uc->{max});
     $ret .= qq(|-
-| [[User:$user|$user]]
+| [[Special:Contributions/$user|$user]]
 | $lastOregon
 | $lastOregonPretty
+| $editsOregon
 | $lastAny
 | $lastAnyPretty
+| $percentOregon
 );
   }
 
