@@ -33,7 +33,16 @@ use Time::ParseDate;
 use lib '/home/tedt/git/wikibacon/';
 use TedderBot;
 
-use constant WIKI_LOGTIME => '{{subst:CURRENTYEAR}}-{{subst:CURRENTMONTH}}-     {{subst:CURRENTDAY2}} {{subst:CURRENTTIME}}';
+die "hey! don't run this until it is approved.\n";
+
+# how many 'idle' hours should the template stay up before we remove it?
+use constant CURRENT_THRESHOLD_HOURS => 2;
+
+# how long since we last removed the template until we remove it again?
+# be aware of edit warring before dialing this down.
+use constant OUR_THRESHOLD_HOURS => 24;
+
+use constant WIKI_LOGTIME => '{{subst:CURRENTYEAR}}-{{subst:CURRENTMONTH}}-{{subst:CURRENTDAY2}} {{subst:CURRENTTIME}}';
 
 # Good for trial runs- set much higher when it is running.
 use constant MAX_TO_CHANGE => 2;
@@ -136,11 +145,15 @@ sub processArticle {
 
   my $c = $page->{'*'};
 
-  if ($c =~ /{{(no)?bots/) {
-    ++$count{skip_bots};
-    _debug("'''skipping [[$title]], bot exclusion.'''\n");
-    next;
-  }
+  # skip this page if it's marked NoBot.
+  return undef if isBotExclusion($c);
+
+  # old way of doing it- keeping for now.
+  #if ($c =~ /{{(no)?bots/) {
+  #  ++$count{skip_bots};
+  #  _debug("'''skipping [[$title]], bot exclusion.'''\n");
+  #  next;
+  #}
 
   my $sec = delta_seconds($page->{timestamp});
   my $hours = sprintf('%.1f', $sec/3600);
@@ -150,12 +163,10 @@ sub processArticle {
 );
 
 
-  # should we be removing the template? Multi-step process:
-  # * are we past MAX_CURRENT_NOEDIT_AGE? (specified in hours)
-  # * have we removed it in the past 24 hours already?
-  #     we don't want to edit war.
-  # TODO: left off here.
-
+  # see if we need to remove the tag, and then do it.
+  if (checkRemoval($title, $page, $hours)) {
+    removeCurrentTemplate($title, $c);
+  }
 
 
 
@@ -172,10 +183,68 @@ sub processArticle {
   return \%count;
 }
 
+sub checkRemoval {
+  my ($title, $page, $last_edit_hours) = @_;
+
+  # should we be removing the template? Multi-step process:
+  # * are we past MAX_CURRENT_NOEDIT_AGE? (specified in hours)
+  # * have we removed it in the past 24 hours already?
+  #     we don't want to edit war.
+  #delete $page->{'*'}; print Dumper($page); exit;
+
+  # last edit time in hours, -1 if we didn't find it.
+  my $our_last_edit_hours = last_tedderbot_edit($title);
+
+  if ($last_edit_hours > CURRENT_THRESHOLD_HOURS && $our_last_edit_hours >= 0 && $our_last_edit_hours > OUR_THRESHOLD_HOURS) {
+    return 1;
+  }
+
+  return undef;
+}
+
+# simply use a regex to remove the current template, then update the page.
+sub removeCurrentTemplate {
+  my ($title, $content) = @_;
+
+  $content =~ s#{{current.*?}}##i;
+  $tb->replacePage($title, $content, "[[User:TedderBot/CurrentPruneBot|remove stale current-event template]], please see [[WP:CAFET]]. (bot edit)");
+  _debug(":updated [[$title]]\n");
+  print "updating $title\n";
+}
+
+# When were we on this page last?
+sub last_tedderbot_edit
+{
+  my ($title) = @_;
+
+  my $info = $mw->api( {
+    action  => 'query',
+    prop    => 'revisions',
+    titles  => $title,
+    rvdir   => 'older',
+    rvlimit => 500,
+  });
+
+  my @pages = keys %{$info->{query}{pages}};
+  my $pageid = shift @pages;
+  foreach my $rev ( @{$info->{query}{pages}{$pageid}{revisions}} ) {
+    if (lc $rev->{user} eq 'ukexpat') {
+    #if (lc $rev->{user} eq 'tedderbot') {
+      my $ts = parsedate($rev->{timestamp}, GMT => 1);
+      #print "found us. ", scalar localtime($ts), "\n";
+      my $seconds = (parsedate(scalar localtime()) - $ts);
+      return $seconds / 3600;
+    }
+  }
+
+  return -1;
+
+}
+
 sub delta_seconds {
   my ($timestamp) = @_;
 
-  my $delta = parsedate(scalar gmtime()) - parsedate($timestamp);
+  my $delta = parsedate(scalar localtime()) - parsedate($timestamp, GMT => 1);
   return $delta;
 }
 
@@ -183,35 +252,14 @@ sub delta_seconds {
 sub _debug {
   $LOG .= join('', @_);
 }
-sub parseTemplate {
-  my ($str) = @_;
 
-#print "PT str: $str\n";
-  # break the string apart- shift off the first, since we
-  # know what it is.
-  my @substr = split('\|', $str);
-  shift @substr;
-#print "substrs: ", join("--", @substr), "\n";
+sub isBotExclusion {
+  my ($content) = @_;
 
-  my @retbits;
-  foreach my $bit (@substr) {
-    #print "checking bit: $bit\n";
-    # is it already wikilinked? If not, make it so, Scotty.
-    if ($bit =~ /^\[\[.+\]\]$/) {
-      push @retbits, $bit;
-    } elsif ($bit eq '') {
-      print "skipping blank bit\n";
-    } else {
-      push @retbits, '[[' . $bit . ']]';
-    }
+  if ($content =~ m#{{nobots|bots|deny=tedderbot}}#i) {
+    _debug("we've been asked to avoid changing this page, so we will.\n");
+    return 1;
   }
 
-  # which template? "anime voices" or "anime voice"?
-  my $ret = join('|', 'Anime voices', @retbits);
-  if (scalar @retbits == 1) {
-    $ret = join('|', 'Anime voice', @retbits);
-  }
-
-  # build up a replacement string, return it.
-  return $ret;
+  return undef;
 }
