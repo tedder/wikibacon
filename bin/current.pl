@@ -33,10 +33,8 @@ use Time::ParseDate;
 use lib '/home/tedt/git/wikibacon/';
 use TedderBot;
 
-die "hey! don't run this until it is approved.\n";
-
 # how many 'idle' hours should the template stay up before we remove it?
-use constant CURRENT_THRESHOLD_HOURS => 2;
+use constant CURRENT_THRESHOLD_HOURS => 12;
 
 # how long since we last removed the template until we remove it again?
 # be aware of edit warring before dialing this down.
@@ -195,7 +193,21 @@ sub checkRemoval {
   # last edit time in hours, -1 if we didn't find it.
   my $our_last_edit_hours = last_tedderbot_edit($title);
 
-  if ($last_edit_hours > CURRENT_THRESHOLD_HOURS && $our_last_edit_hours >= 0 && $our_last_edit_hours > OUR_THRESHOLD_HOURS) {
+  my $stale = 0;
+  if ($last_edit_hours > CURRENT_THRESHOLD_HOURS) {
+    ++$stale;
+  }
+
+  print "OLEH: ", sprintf("%.1f", $our_last_edit_hours), "\n";
+
+  my $our_edit_okay;
+  if ($our_last_edit_hours >= 0 && $our_last_edit_hours > OUR_THRESHOLD_HOURS) {
+    ++$our_edit_okay;
+  } elsif ($our_last_edit_hours < 0) {
+    ++$our_edit_okay;
+  }
+
+  if ($stale && $our_edit_okay) {
     return 1;
   }
 
@@ -207,9 +219,10 @@ sub removeCurrentTemplate {
   my ($title, $content) = @_;
 
   $content =~ s#{{current.*?}}##i;
-  $tb->replacePage($title, $content, "[[User:TedderBot/CurrentPruneBot|remove stale current-event template]], please see [[WP:CAFET]]. (bot edit)");
+  $tb->replacePage($title, $content, "[[User:TedderBot/CurrentPruneBot|remove stale current-event template]], please see [[WP:CET]]. (bot edit)");
   _debug(":updated [[$title]]\n");
   print "updating $title\n";
+
 }
 
 # When were we on this page last?
@@ -228,8 +241,7 @@ sub last_tedderbot_edit
   my @pages = keys %{$info->{query}{pages}};
   my $pageid = shift @pages;
   foreach my $rev ( @{$info->{query}{pages}{$pageid}{revisions}} ) {
-    if (lc $rev->{user} eq 'ukexpat') {
-    #if (lc $rev->{user} eq 'tedderbot') {
+    if (lc $rev->{user} eq 'tedderbot') {
       my $ts = parsedate($rev->{timestamp}, GMT => 1);
       #print "found us. ", scalar localtime($ts), "\n";
       my $seconds = (parsedate(scalar localtime()) - $ts);
