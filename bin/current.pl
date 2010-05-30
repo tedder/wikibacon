@@ -79,12 +79,15 @@ $OUT .= qq(
 );
 
 
-checkTemplate('Template:Current');
-checkTemplate('Template:Current related');
+my $totalRemoved = 0;
+$totalRemoved += checkTemplate('Template:Current');
+$totalRemoved += checkTemplate('Template:Current related');
 
 $OUT .= "|}\n";
+my $summary = "census (bot edit)";
+if ($totalRemoved) { $summary .= ", removed $totalRemoved."; }
 
-$tb->replacePage('User:TedderBot/CurrentPruneBot/census', $OUT, "census (bot edit)");
+$tb->replacePage('User:TedderBot/CurrentPruneBot/census', $OUT, $summary);
 
 exit;
 
@@ -114,21 +117,21 @@ sub checkTemplate {
     #hook => &process_article
    } ) || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
 
-  my $count = 0;
+  my $removed = 0;
   my %seen;
 
   foreach my $entry (@$backlist, @$emblist) {
     my $title = $entry->{title};
     next if $seen{$title}++;
-    processArticle($entry);
+    $removed += processArticle($entry);
   }
 
   #print Dumper(\%count);
 
-  _debug(":updated pages: $count\n");
+  _debug(":updated pages: $removed\n");
   #$tb->appendPage('User:TedderBot/AnimeVoiceLink/log', $LOG, WIKI_LOGTIME, "update log (bot edit)");
 
-  return undef;
+  return $removed;
 }
 
 sub processArticle {
@@ -136,7 +139,7 @@ sub processArticle {
   my $title = $entry->{title};
   my $dtitle = decode_utf8($title);
 
-  my %count;
+  my $removed = 0;
 
   #print "title: $title\n";
   my $page = $mw->get_page( { title => $title } );
@@ -146,13 +149,6 @@ sub processArticle {
   # skip this page if it's marked NoBot.
   return undef if isBotExclusion($c);
 
-  # old way of doing it- keeping for now.
-  #if ($c =~ /{{(no)?bots/) {
-  #  ++$count{skip_bots};
-  #  _debug("'''skipping [[$title]], bot exclusion.'''\n");
-  #  next;
-  #}
-
   my $sec = delta_seconds($page->{timestamp});
   my $hours = sprintf('%.1f', $sec/3600);
   $OUT .= qq(| [[$title]]
@@ -160,25 +156,12 @@ sub processArticle {
 |-
 );
 
-
   # see if we need to remove the tag, and then do it.
   if (checkRemoval($title, $page, $hours)) {
-    removeCurrentTemplate($title, $c);
+    $removed += removeCurrentTemplate($title, $c);
   }
 
-
-
-  #$tb->replacePage($title, $new_c, "link anime voices, see [[User:TedderBot/AnimeVoiceLink]] (bot edit)");
-  #_debug(":updated [[$title]]\n");
-  #print "updating $title\n";
-
-  # testing: make sure we don't change more than N.
-  #if (++$count >= MAX_TO_CHANGE) {
-  #  _debug("\nWe've changed the maximum allowed pages. Outta here.\n");
-  #  last;
-  #}
-
-  return \%count;
+  return $removed;
 }
 
 sub checkRemoval {
@@ -198,7 +181,7 @@ sub checkRemoval {
     ++$stale;
   }
 
-  print "OLEH: ", sprintf("%.1f", $our_last_edit_hours), "\n";
+  #print "OLEH: ", sprintf("%.1f", $our_last_edit_hours), "\n";
 
   my $our_edit_okay;
   if ($our_last_edit_hours >= 0 && $our_last_edit_hours > OUR_THRESHOLD_HOURS) {
@@ -221,8 +204,8 @@ sub removeCurrentTemplate {
   $content =~ s#{{current.*?}}##i;
   $tb->replacePage($title, $content, "[[User:TedderBot/CurrentPruneBot|remove stale current-event template]], please see [[WP:CET]]. (bot edit)");
   _debug(":updated [[$title]]\n");
-  print "updating $title\n";
-
+  #print "updating $title\n";
+  return 1;
 }
 
 # When were we on this page last?

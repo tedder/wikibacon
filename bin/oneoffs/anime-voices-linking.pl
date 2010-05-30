@@ -35,7 +35,7 @@ use TedderBot;
 use constant WIKI_LOGTIME => '{{subst:CURRENTYEAR}}-{{subst:CURRENTMONTH}}-     {{subst:CURRENTDAY2}} {{subst:CURRENTTIME}}';
 
 # Good for trial runs- set much higher when it is running.
-use constant MAX_TO_CHANGE => 1;
+use constant MAX_TO_CHANGE => 2000;
 
 # Number of seconds between edits. Running time (in hours) 
 # can be approximated by NUM_PAGES * SLEEP_TIME / 3600
