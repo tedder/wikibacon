@@ -205,7 +205,7 @@ sub removeCurrentTemplate {
   $content =~ s#\{\{current([^{}]*?)\}\}##i;
   my $newlength = length $content;
 
-  if (($oldlength - $newlength) > 100) {
+  if (abs(length $oldlength - length $newlength) > 100) {
     _debug("eep! tried removing the current template and we must have done much more. We're scared, so we'll bail.\n");
     return -100;
   }
