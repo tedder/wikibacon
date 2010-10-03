@@ -146,6 +146,9 @@ sub processArticle {
 
   my $c = $page->{'*'};
 
+  # skip the page if we weren't able to download the content.
+  return undef if (length $c < 100);
+
   # skip this page if it's marked NoBot.
   return undef if isBotExclusion($c);
 
@@ -200,6 +203,12 @@ sub checkRemoval {
 # simply use a regex to remove the current template, then update the page.
 sub removeCurrentTemplate {
   my ($title, $content) = @_;
+
+  if (length $content < 100) {
+    _debug("eep! page is blankish, cowardly skipping.\n");
+    return -100;
+  }
+
 
   my $oldlength = length $content;
   $content =~ s#\{\{current([^{}]*?)\}\}##i;

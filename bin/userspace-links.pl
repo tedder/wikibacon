@@ -42,7 +42,7 @@ my $NOPOST = 0;
 
 # Output to the debug location, not the ACTUAL location. Might also cause
 # messages to STDOUT/STDERR.
-my $DEBUG = 0;
+my $DEBUG = 1;
 
 # Log lines
 my $LOG = '';
@@ -106,7 +106,7 @@ print "checking: $title\n";
 
   my $out = '';
   if ($content =~ /(.{0,20})\b(user:|user talk:)(.{0,20})/i) {
-    $out .= "|-\n | {{plenr|1=$title}}\n | <nowiki>$1$2$3</nowiki>\n";
+    $out .= "|-\n | [[$title]] {{edit|$title}}\n | <nowiki>$1$2$3</nowiki>\n";
     print "match: $1$2$3\n";
   }
 
