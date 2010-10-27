@@ -211,7 +211,7 @@ sub removeCurrentTemplate {
 
 
   my $oldlength = length $content;
-  $content =~ s#\{\{current([^{}]*?)\}\}##i;
+  $content =~ s#\{\{(current|recent|developing|flux|ongoing|relatedcurrent)([^{}]*?)\}\}##i;
   my $newlength = length $content;
 
   if (abs(length $oldlength - length $newlength) > 100) {
