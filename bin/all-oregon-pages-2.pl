@@ -100,7 +100,7 @@ foreach my $entry (@$backlist) {
 
 my $catlist = $mw->list ( { action => 'query',
   list => 'categorymembers',
-  cmtitle => 'Category:WikiProject Oregon pages',
+  cmtitle => 'Category:WikiProject Oregon',
   #blnamespace => '0|1', # 1 is talk, which is where the template is. We'll
   #                      # just use s/Talk:// to get the title.
   cmlimit => '500',
@@ -161,7 +161,7 @@ sub outputAdmin {
   my $time_subst = WIKI_TIME;
 
   # create our header
-  my $wikiContent = qq({{WP:WPOR-Nav}}
+  my $wikiContent = qq({{Wikipedia:WikiProject Oregon/Nav}}
 This list was constructed from articles tagged with {{tl|WikiProject Oregon}} (or any other article in [[:category:WikiProject Oregon articles]]) as of $time_subst. This list makes possible [http://en.wikipedia.org/w/index.php?title=Special:Recentchangeslinked&target=Wikipedia:WikiProject_Oregon/Admin Recent WP:ORE article changes].
 
 There are $count entries, all articles.
@@ -327,7 +327,7 @@ sub outputAdmin2 {
     total    => scalar @$file + scalar @$cat + scalar @$port + scalar @$temp + scalar @$proj,
   );
 
-  my $wikiContent = qq({{WP:WPOR-Nav}}
+  my $wikiContent = qq({{Wikipedia:WikiProject Oregon/Nav}}
 This table was constructed from categories, images, portal, project, and templates tagged with {{tl|WikiProject Oregon}} (or any other article in [[:category:WikiProject Oregon articles]]) as of $time_subst. This list makes possible [http://en.wikipedia.org/w/index.php?title=Special:Recentchangeslinked&target=Wikipedia:WikiProject_Oregon/Admin2 Recent WP:ORE non-article changes].
 
 There are $count{file} media files (previously called images), $count{category} categories, $count{portal} portal pages, $count{template} templates, and $count{project} project pages totaling $count{total} pages.
