@@ -56,18 +56,24 @@ my $NOPOST = 0;
 # messages to STDOUT/STDERR.
 my $DEBUG = 0;
 
+# Ignore the status on the wikipedia "okay to run" page.
+my $FORCE = 0;
+my $TESTONLY = 0;
+
 # Log lines
 my $LOG = '';
 my $OUT = '';
 
 GetOptions ("nopost"    => \$NOPOST,
-            "debug"     => \$DEBUG);
+            "debug"     => \$DEBUG,
+            "force"     => \$FORCE,
+            "testonly"  => \$TESTONLY );
 
 
 my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => 0 );
 my $mw = $tb->getMWAPI();
 
-unless($tb->okayToRun()) {
+unless($tb->okayToRun() || $FORCE) {
   die "we are not approved to run. outta here.";
 }
 
@@ -82,6 +88,18 @@ $OUT .= qq(
 my $totalRemoved = 0;
 $totalRemoved += checkTemplate('Template:Current');
 $totalRemoved += checkTemplate('Template:Current related');
+#$totalRemoved += checkTemplate('Template:Current spaceflight');
+##$totalRemoved += checkTemplate('Template:Launching');
+$totalRemoved += checkTemplate('Template:Current person');
+$totalRemoved += checkTemplate('Template:Recent death');
+$totalRemoved += checkTemplate('Template:Recent death presumed');
+$totalRemoved += checkTemplate('Template:Current disaster');
+$totalRemoved += checkTemplate('Template:Current disasters');
+##$totalRemoved += checkTemplate('Template:Current sport');
+# per Resolute on my talkpage, 3/March/2011
+#$totalRemoved += checkTemplate('Template:Current sport-related');
+$totalRemoved += checkTemplate('Template:Current tropical cyclone');
+
 
 $OUT .= "|}\n";
 my $summary = "census (bot edit)";
@@ -219,7 +237,7 @@ sub removeCurrentTemplate {
     return -100;
   }
 
-  $tb->replacePage($title, $content, "[[User:TedderBot/CurrentPruneBot|remove stale current-event template]], please see [[WP:CET]]. (bot edit)");
+  $TESTONLY || $tb->replacePage($title, $content, "[[User:TedderBot/CurrentPruneBot|remove stale current-event template]], please see [[WP:CET]]. (bot edit)");
   _debug(":updated [[$title]]\n");
   #print "updating $title\n";
   return 1;

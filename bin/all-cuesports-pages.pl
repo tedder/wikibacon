@@ -2,7 +2,7 @@
 
 ###############################################################################
 #
-# Copyright (c) 2009 Ted Timmons  <ted-bacon@perljam.net>
+# Copyright (c) 2009,2011 Ted Timmons  <ted@perljam.net>
 # This software is released under the MIT license, cited below.
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -35,6 +35,12 @@ use TedderBot;
 use constant WIKI_TIME => '{{subst:CURRENTTIME}} {{subst:CURRENTDAYNAME}} {{subst:CURRENTMONTHNAME}} {{subst:CURRENTDAY}}, {{subst:CURRENTYEAR}}';
 use constant WIKI_LOGTIME => '{{subst:CURRENTYEAR}}-{{subst:CURRENTMONTH}}-{{subst:CURRENTDAY2}} {{subst:CURRENTTIME}}';
 
+my $PROJECT = 'Wikipedia:WikiProject Cue sports';
+my $CATEGORY = 'Category:All cue sports pages minus snooker';
+my $PROJECT_ADMIN = $PROJECT . '/Admin';
+my $PROJECT_ADMIN_ESCAPED = $PROJECT_ADMIN;
+$PROJECT_ADMIN_ESCAPED =~ tr/\s/_/;
+
 
 # run through the process, but don't acutally output to Wikipedia.
 my $NOPOST = 0; 
@@ -61,11 +67,10 @@ unless($tb->okayToRun()) {
 }
 
 # get some page contents
-#my $page = $mw->get_page( { title => 'Wikipedia:WikiProject Oregon/Admin' } );
 
 my $backlist = $mw->list ( { action => 'query',
   list => 'backlinks',
-  bltitle => 'Template:WikiProject Oregon',
+  bltitle => 'Template:' . $PROJECT,
   #blnamespace => '0|1', # 1 is talk, which is where the template is. We'll
   #                      # just use s/Talk:// to get the title.
   bllimit => '500',
@@ -100,7 +105,7 @@ foreach my $entry (@$backlist) {
 
 my $catlist = $mw->list ( { action => 'query',
   list => 'categorymembers',
-  cmtitle => 'Category:WikiProject Oregon pages',
+  cmtitle => $CATEGORY,
   #blnamespace => '0|1', # 1 is talk, which is where the template is. We'll
   #                      # just use s/Talk:// to get the title.
   cmlimit => '500',
@@ -129,7 +134,6 @@ outputAdmin2($tb, $mw, \%namespacelist);
 #sleep 30;
 my $runtime = time() - $STARTTIME;
 appendLog("finished, ready to upload log. Runtime in seconds: $runtime");
-uploadLog($tb);
 
 exit;
 
@@ -161,12 +165,12 @@ sub outputAdmin {
   my $time_subst = WIKI_TIME;
 
   # create our header
-  my $wikiContent = qq({{Wikipedia:WikiProject Oregon/Nav}}
-This list was constructed from articles tagged with {{tl|WikiProject Oregon}} (or any other article in [[:category:WikiProject Oregon pages]]) as of $time_subst. This list makes possible [http://en.wikipedia.org/w/index.php?title=Special:Recentchangeslinked&target=Wikipedia:WikiProject_Oregon/Admin Recent WP:ORE article changes].
+  my $wikiContent = qq({{$PROJECT/Nav}}
+This list was constructed from articles in [[$PROJECT]] as of $time_subst. This list makes possible the [http://en.wikipedia.org/w/index.php?title=Special:Recentchangeslinked&target=$PROJECT_ADMIN_ESCAPED recent article changes] for the project.
 
 There are $count entries, all articles.
 
-<small>''See also: [[Wikipedia:WikiProject Oregon/Admin2]] for non-article entries''</small>
+<small>''See also: [[${PROJECT_ADMIN}2]] for non-article entries''</small>
 
 );
 
@@ -177,13 +181,13 @@ There are $count entries, all articles.
   }
 
   # footer
-  $wikiContent .= "\n\n[[Category:WikiProject Oregon]]\n";
+  $wikiContent .= "\n\n[[$CATEGORY]]\n";
 
   #print "page: $wikiContent\n";
   unless ($NOPOST) {
     my $location = 'User:TedderBot/AOP/admin';
     unless ($DEBUG) {
-      $location = 'Wikipedia:WikiProject Oregon/Admin';
+      $location = $PROJECT_ADMIN;
     }
     my $ret = $tb->replacePage($location, $wikiContent, "update page with $count articles (bot edit)");
     my $status = 'succeeded';
@@ -327,25 +331,25 @@ sub outputAdmin2 {
     total    => scalar @$file + scalar @$cat + scalar @$port + scalar @$temp + scalar @$proj,
   );
 
-  my $wikiContent = qq({{Wikipedia:WikiProject Oregon/Nav}}
-This table was constructed from categories, images, portal, project, and templates tagged with {{tl|WikiProject Oregon}} (or any other article in [[:category:WikiProject Oregon pages]]) as of $time_subst. This list makes possible [http://en.wikipedia.org/w/index.php?title=Special:Recentchangeslinked&target=Wikipedia:WikiProject_Oregon/Admin2 Recent WP:ORE non-article changes].
+  my $wikiContent = qq({{$PROJECT/Nav}}
+This table was constructed from  categories, images, portal, project, and templates in [[$PROJECT]] as of $time_subst. This list makes possible the [http://en.wikipedia.org/w/index.php?title=Special:Recentchangeslinked&target=${PROJECT_ADMIN_ESCAPED}2 recent non-article changes] for the project.
 
 There are $count{file} media files (previously called images), $count{category} categories, $count{portal} portal pages, $count{template} templates, and $count{project} project pages totaling $count{total} pages.
 
-<small>''See also: [[Wikipedia:WikiProject Oregon/Admin]] for article entries''</small>
+<small>''See also: [[$PROJECT_ADMIN]] for article entries''</small>
 
 {| class="sortable"
 ! Page !! Classification
 ) . $mainContent . qq(|}
 
-[[Category:WikiProject Oregon]]
+[[$CATEGORY]]
 );
 
   #print "about to post admin2\n";
   unless ($NOPOST) {
     my $location = 'User:TedderBot/AOP/admin2';
     unless ($DEBUG) {
-      $location = 'Wikipedia:WikiProject Oregon/Admin2';
+      $location = $PROJECT_ADMIN . '2';
     }
     #print "at RP, loc: $location\n";
     my $ret = $tb->replacePage($location, $wikiContent, "update page with $count{total} total listings (bot edit)");
@@ -385,14 +389,3 @@ sub appendLog {
   $LOG .= join('', ':', @_, "\n");
 }
 
-# Dump the log onto Wikipedia, clear the global.
-sub uploadLog {
-  my ($tb) = @_;
-
-  my $location = 'User:TedderBot/AOP/log';
-  unless ($NOPOST) {
-    my $output = "* " . WIKI_LOGTIME . "\n" . $LOG . "\n\n";
-    $tb->appendPage($location, $output, WIKI_LOGTIME, "update AOP log");
-    $LOG = '';
-  }
-}
