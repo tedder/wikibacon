@@ -39,7 +39,7 @@ my $PROJECT = 'Wikipedia:WikiProject Cue sports';
 my $CATEGORY = 'Category:All cue sports pages minus snooker';
 my $PROJECT_ADMIN = $PROJECT . '/Admin';
 my $PROJECT_ADMIN_ESCAPED = $PROJECT_ADMIN;
-$PROJECT_ADMIN_ESCAPED =~ tr/\s/_/;
+$PROJECT_ADMIN_ESCAPED =~ s/ /_/g;
 
 
 # run through the process, but don't acutally output to Wikipedia.
