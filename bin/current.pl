@@ -229,12 +229,14 @@ sub removeCurrentTemplate {
 
 
   my $oldlength = length $content;
-  $content =~ s#\{\{(current|recent|developing|flux|ongoing|relatedcurrent)([^{}]*?)\}\}##i;
+  $content =~ s#\{\{(current|recent|developing|flux|ongoing|relatedcurrent|died)([^{}]*?)\}\}##i;
   my $newlength = length $content;
 
   if (abs(length $oldlength - length $newlength) > 100) {
     _debug("eep! tried removing the current template and we must have done much more. We're scared, so we'll bail.\n");
     return -100;
+  } elsif ($oldlength == $newlength) {
+    return 0;
   }
 
   $TESTONLY || $tb->replacePage($title, $content, "[[User:TedderBot/CurrentPruneBot|remove stale current-event template]], please see [[WP:CET]]. (bot edit)");
