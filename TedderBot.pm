@@ -164,7 +164,7 @@ sub replacePage {
       basetimestamp => $timestamp, # to avoid edit conflicts
       bot  => 1,
       text => $text } )
-      || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
+      || { print STDERR "page [[$articleName]]: " . $mw->{error}->{code} . ': ' . $mw->{error}->{details} . "\n"; return 0; }
 
     #print STDERR "mw edit ret: ", Dumper($ret), "\n";
     # return true on success.
