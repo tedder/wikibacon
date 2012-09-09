@@ -164,7 +164,7 @@ sub replacePage {
       basetimestamp => $timestamp, # to avoid edit conflicts
       bot  => 1,
       text => $text } )
-      || { print STDERR "page [[$articleName]]: " . $mw->{error}->{code} . ': ' . $mw->{error}->{details} . "\n"; return 0; }
+      || print STDERR "page [[$articleName]]: " . $mw->{error}->{code} . ': ' . $mw->{error}->{details} . "\n";
 
     #print STDERR "mw edit ret: ", Dumper($ret), "\n";
     # return true on success.
@@ -173,6 +173,7 @@ sub replacePage {
       && $ret->{edit}{result} eq 'Success') {
       return 1;
     }
+    return 0;
   }
 
   return 0;
