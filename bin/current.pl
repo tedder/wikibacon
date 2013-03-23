@@ -31,6 +31,7 @@ use Encode;
 use Getopt::Long;
 use Time::ParseDate;
 use lib '/home/tedt/git/wikibacon/';
+use lib '/home/tedder/git/wikibacon/';
 use TedderBot;
 
 # how many 'idle' hours should the template stay up before we remove it?
@@ -229,7 +230,7 @@ sub removeCurrentTemplate {
 
 
   my $oldlength = length $content;
-  $content =~ s#\{\{(current|recent|developing|flux|ongoing|relatedcurrent|died)([^{}]*?)\}\}##i;
+  $content =~ s#\{\{(current|recent|developing|flux|ongoing|relatedcurrent|current related|died)([^{}]*?)\}\}##i;
   my $newlength = length $content;
 
   if (abs(length $oldlength - length $newlength) > 100) {
