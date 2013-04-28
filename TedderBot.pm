@@ -2,7 +2,7 @@ package TedderBot;
 
 ###############################################################################
 #
-# Copyright (c) 2009 Ted Timmons  <ted-bacon@perljam.net>
+# Copyright (c) 2009 Ted Timmons  <ted+bacon@perljam.net>
 # This software is released under the MIT license, cited below.
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -105,7 +105,9 @@ sub getMWAPI {
                                lgpassword => $self->{config}{mw_pass} } )
       || die $mw->{error}->{code} . ': ' . $mw->{error}->{details};
     $self->_debug("login details: ", Dumper($result));
-  }
+  } else {
+		die "missing login configuration information."
+	}
 
 
   # Assign it into ourselves.
