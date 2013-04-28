@@ -61,6 +61,8 @@ my $DEBUG = 0;
 my $FORCE = 0;
 my $TESTONLY = 0;
 
+my $USERFILE = '/home/tedt/.wiki-userinfo');
+
 # Log lines
 my $LOG = '';
 my $OUT = '';
@@ -68,10 +70,11 @@ my $OUT = '';
 GetOptions ("nopost"    => \$NOPOST,
             "debug"     => \$DEBUG,
             "force"     => \$FORCE,
+            "userfile"  => \$USERFILE,
             "testonly"  => \$TESTONLY );
 
 
-my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => 0 );
+my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => $DEBUG );
 my $mw = $tb->getMWAPI();
 
 unless($tb->okayToRun() || $FORCE) {
