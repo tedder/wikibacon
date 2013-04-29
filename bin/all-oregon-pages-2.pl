@@ -47,13 +47,15 @@ my $DEBUG = 0;
 my $LOG = '';
 
 my $STARTTIME = time();
+my $USERFILE = '/home/tedt/.wiki-userinfo';
 
 
 GetOptions ("nopost"    => \$NOPOST,
+            "userfile=s"=> \$USERFILE,
             "debug"     => \$DEBUG);
 
 
-my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => 0 );
+my $tb = TedderBot->new( userfile => $USERFILE, debug => 0 );
 my $mw = $tb->getMWAPI();
 
 unless($tb->okayToRun()) {

@@ -33,7 +33,9 @@ use Time::ParseDate;
 use lib '/home/tedt/git/wikibacon/';
 use TedderBot;
 
-my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => 0 );
+die "old file, needs migration";
+
+my $tb = TedderBot->new( userfile => $USERFILE, debug => 0 );
 my $mw = $tb->getMWAPI();
 
 while(my $line = <>) {
