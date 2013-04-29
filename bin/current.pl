@@ -61,7 +61,7 @@ my $DEBUG = 0;
 my $FORCE = 0;
 my $TESTONLY = 0;
 
-my $USERFILE = '/home/tedt/.wiki-userinfo');
+my $USERFILE = '/home/tedt/.wiki-userinfo';
 
 # Log lines
 my $LOG = '';
