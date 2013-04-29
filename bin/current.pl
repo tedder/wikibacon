@@ -2,7 +2,7 @@
 
 ###############################################################################
 #
-# Copyright (c) 2009 Ted Timmons  <ted-bacon@perljam.net>
+# Copyright (c) 2009 Ted Timmons  <ted+wiki@perljam.net>
 # This software is released under the MIT license, cited below.
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -70,7 +70,7 @@ my $OUT = '';
 GetOptions ("nopost"    => \$NOPOST,
             "debug"     => \$DEBUG,
             "force"     => \$FORCE,
-            "userfile"  => \$USERFILE,
+            "userfile=s"=> \$USERFILE,
             "testonly"  => \$TESTONLY );
 
 
