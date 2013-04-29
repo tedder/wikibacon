@@ -74,7 +74,7 @@ GetOptions ("nopost"    => \$NOPOST,
             "testonly"  => \$TESTONLY );
 
 
-my $tb = TedderBot->new( userfile => '/home/tedt/.wiki-userinfo', debug => $DEBUG );
+my $tb = TedderBot->new( userfile => $USERFILE, debug => $DEBUG );
 my $mw = $tb->getMWAPI();
 
 unless($tb->okayToRun() || $FORCE) {
